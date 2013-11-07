@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/SpheroMapper/SpheroMapper.iml" filepath="$PROJECT_DIR$/SpheroMapper/SpheroMapper.iml" />
+      <module fileurl="file://$PROJECT_DIR$/SpheroMapperProject.iml" filepath="$PROJECT_DIR$/SpheroMapperProject.iml" />
+    </modules>
+  </component>
+</project>
+
