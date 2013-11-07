@@ -1,6 +1,8 @@
 package edu.berkeley.spheromapper;
 
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
@@ -15,11 +17,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.support.v4.widget.DrawerLayout;
+import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 public class MainActivity extends ActionBarActivity
         implements NavigationDrawerFragment.NavigationDrawerCallbacks {
+
+    private final static int REQUEST_ENABLE_BT = 1;
 
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
@@ -44,6 +49,22 @@ public class MainActivity extends ActionBarActivity
         mNavigationDrawerFragment.setUp(
                 R.id.navigation_drawer,
                 (DrawerLayout) findViewById(R.id.drawer_layout));
+
+
+        BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (mBluetoothAdapter == null) {
+            // Device does not support Bluetooth
+            Log.i("MainActivity", "Device does not support Bluetooth, not going to prompt enable");
+        } else {
+            if (!mBluetoothAdapter.isEnabled()) {
+                Log.i("MainActivity", "Bluetooth isn't enabled, so prompting");
+                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                // we can implement onActivityResult() to handle this request code
+                startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+            } else {
+                Log.i("MainActivity", "Bluetooth is already enabled");
+            }
+        }
     }
 
     @Override
