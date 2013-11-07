@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true">
+
+        <GridLayout
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:columnCount="3"
+            android:rowCount="3"
+            android:useDefaultMargins="false">
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@id/up"
+                android:layout_row="0"
+                android:layout_column="1"
+                android:src="@color/abc_search_url_text_normal"
+                android:clickable="true"
+                android:text="Up" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/down"
+                android:layout_row="2"
+                android:layout_column="1"
+                android:src="@color/abc_search_url_text_normal"
+                android:clickable="true"
+                android:text="Down" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/left"
+                android:layout_row="1"
+                android:layout_column="0"
+                android:src="@color/abc_search_url_text_normal"
+                android:clickable="true"
+                android:text="Left" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/right"
+                android:layout_row="1"
+                android:layout_column="2"
+                android:src="@color/abc_search_url_text_normal"
+                android:clickable="true"
+                android:text="Right" />
+
+        </GridLayout>
+
+    </LinearLayout>
+
+</RelativeLayout>
