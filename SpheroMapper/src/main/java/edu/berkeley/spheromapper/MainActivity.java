@@ -1,5 +1,6 @@
 package edu.berkeley.spheromapper;
 
+import android.graphics.Color;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
@@ -10,12 +11,14 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 import orbotix.robot.base.*;
+import orbotix.view.calibration.CalibrationView;
 import orbotix.view.connection.SpheroConnectionView;
 import orbotix.view.connection.SpheroConnectionView.OnRobotConnectionEventListener;
 
@@ -36,6 +39,7 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
      * The Sphero Connection View
      */
     private SpheroConnectionView mSpheroConnectionView;
+    private CalibrationView mCalibrationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +58,7 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
                         actionBar.getThemedContext(),
                         android.R.layout.simple_list_item_1,
                         android.R.id.text1,
-                        new String[] {
+                        new String[]{
                                 getString(R.string.title_section1),
                                 getString(R.string.title_section2),
                                 getString(R.string.title_section3),
@@ -62,27 +66,50 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
                 this);
 
         mSpheroConnectionView = (SpheroConnectionView)findViewById(R.id.sphero_connection_view);
+        mCalibrationView = (CalibrationView) findViewById(R.id.sphero_calibration_view);
+
         // Set the connection event listener
         mSpheroConnectionView.setOnRobotConnectionEventListener(new OnRobotConnectionEventListener() {
             // If the user clicked a Sphero and it failed to connect, this event will be fired
             @Override
-            public void onRobotConnectionFailed(Robot robot) {}
+            public void onRobotConnectionFailed(Robot robot) {
+            }
+
             // If there are no Spheros paired to this device, this event will be fired
             @Override
-            public void onNonePaired() {}
+            public void onNonePaired() {
+            }
+
             // The user clicked a Sphero and it successfully paired.
             @Override
             public void onRobotConnected(Robot robot) {
+                Toast.makeText(MainActivity.this, "Successfully connected to Sphero", Toast.LENGTH_LONG).show();
                 mRobot = robot;
                 // Skip this next step if you want the user to be able to connect multiple Spheros
                 mSpheroConnectionView.setVisibility(View.GONE);
+
+
+                mCalibrationView.setColor(Color.WHITE);
+                mCalibrationView.setCircleColor(Color.WHITE);
+                mCalibrationView.enable();
+
+
+                mCalibrationView.setRobot(mRobot);
             }
+
             @Override
             public void onBluetoothNotEnabled() {
                 // See UISample Sample on how to show BT settings screen, for now just notify user
-                Toast.makeText(MainActivity.this, "Bluetooth Not Enabled", Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, "Bluetooth tot enabled", Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if(mCalibrationView != null && mRobot != null){
+            mCalibrationView.interpretMotionEvent(event);
+        }
+        return super.dispatchTouchEvent(event);
     }
 
     /**
