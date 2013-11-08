@@ -15,7 +15,7 @@
         android:theme="@style/AppTheme" >
         <activity
             android:name="edu.berkeley.spheromapper.MainActivity"
-            android:label="@string/app_name" >
+            android:label="@string/title_activity_main" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -23,6 +23,8 @@
             </intent-filter>
         </activity>
     </application>
+
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+
 </manifest>

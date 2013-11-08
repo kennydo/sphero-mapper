@@ -24,4 +24,6 @@ android {
 
 dependencies {
 	compile 'com.android.support:appcompat-v7:+'
+    compile files('libs/RobotLibrary.jar')
+    compile files('libs/achievementManager.jar')
 }
