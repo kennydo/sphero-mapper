@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.util.Log;
 import orbotix.robot.base.*;
 import orbotix.view.calibration.CalibrationView;
 import orbotix.view.connection.SpheroConnectionView;
@@ -29,17 +30,6 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
      * current dropdown position.
      */
     private static final String STATE_SELECTED_NAVIGATION_ITEM = "selected_navigation_item";
-
-    /**
-     * Robot to control
-     */
-    private Robot mRobot;
-
-    /**
-     * The Sphero Connection View
-     */
-    private SpheroConnectionView mSpheroConnectionView;
-    private CalibrationView mCalibrationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,57 +49,13 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
                         android.R.layout.simple_list_item_1,
                         android.R.id.text1,
                         new String[]{
-                                getString(R.string.title_section1),
-                                getString(R.string.title_section2),
+                                getString(R.string.title_connection),
+                                getString(R.string.title_manual_drive),
                                 getString(R.string.title_section3),
                         }),
                 this);
 
-        mSpheroConnectionView = (SpheroConnectionView)findViewById(R.id.sphero_connection_view);
-        mCalibrationView = (CalibrationView) findViewById(R.id.sphero_calibration_view);
 
-        // Set the connection event listener
-        mSpheroConnectionView.setOnRobotConnectionEventListener(new OnRobotConnectionEventListener() {
-            // If the user clicked a Sphero and it failed to connect, this event will be fired
-            @Override
-            public void onRobotConnectionFailed(Robot robot) {
-            }
-
-            // If there are no Spheros paired to this device, this event will be fired
-            @Override
-            public void onNonePaired() {
-            }
-
-            // The user clicked a Sphero and it successfully paired.
-            @Override
-            public void onRobotConnected(Robot robot) {
-                Toast.makeText(MainActivity.this, "Successfully connected to Sphero", Toast.LENGTH_LONG).show();
-                mRobot = robot;
-                // Skip this next step if you want the user to be able to connect multiple Spheros
-                mSpheroConnectionView.setVisibility(View.GONE);
-
-
-                mCalibrationView.setColor(Color.WHITE);
-                mCalibrationView.setCircleColor(Color.WHITE);
-                mCalibrationView.enable();
-
-
-                mCalibrationView.setRobot(mRobot);
-            }
-
-            @Override
-            public void onBluetoothNotEnabled() {
-                // See UISample Sample on how to show BT settings screen, for now just notify user
-                Toast.makeText(MainActivity.this, "Bluetooth tot enabled", Toast.LENGTH_LONG).show();
-            }
-        });
-    }
-
-    public boolean dispatchTouchEvent(MotionEvent event) {
-        if(mCalibrationView != null && mRobot != null){
-            mCalibrationView.interpretMotionEvent(event);
-        }
-        return super.dispatchTouchEvent(event);
     }
 
     /**
@@ -118,8 +64,6 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh list of Spheros
-        mSpheroConnectionView.showSpheros();
     }
 
     @Override
@@ -163,9 +107,21 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
     public boolean onNavigationItemSelected(int position, long id) {
         // When the given dropdown item is selected, show its contents in the
         // container view.
-       /* getSupportFragmentManager().beginTransaction()
-                .replace(R.id.container, PlaceholderFragment.newInstance(position + 1))
-                .commit();*/
+        Fragment fragment;
+        switch(position){
+            case 0: // connection
+                fragment = new ConnectionFragment();
+                break;
+            case 1: // manual drive
+                fragment = new ManualDriveFragment();
+                break;
+
+            default:
+                fragment = new ManualDriveFragment();
+        }
+       getSupportFragmentManager().beginTransaction()
+                .replace(R.id.container, fragment)
+                .commit();
         return true;
     }
 
@@ -202,6 +158,15 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
             textView.setText(Integer.toString(getArguments().getInt(ARG_SECTION_NUMBER)));
             return rootView;
         }
+    }
+
+
+    @Override
+    public void onStop(){
+        super.onStop();
+
+        // Disconnect from the robot.
+        RobotProvider.getDefaultProvider().removeAllControls();
     }
 
 }

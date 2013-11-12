@@ -1,27 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/content"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
-    tools:ignore="MergeRootFrame"
-    android:background="#ff888888">
+    tools:ignore="MergeRootFrame">
 
-    <!--<FrameLayout
+    <FrameLayout
         android:layout_height="match_parent"
         android:layout_width="match_parent"
         android:id="@+id/container">
-    </FrameLayout>-->
-
-    <orbotix.view.calibration.CalibrationView
-        android:id="@+id/sphero_calibration_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
-
-    <orbotix.view.connection.SpheroConnectionView
-        android:id="@+id/sphero_connection_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#A0000000" />
+    </FrameLayout>
 </FrameLayout>
