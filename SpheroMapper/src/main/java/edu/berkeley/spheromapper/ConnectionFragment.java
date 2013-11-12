@@ -90,4 +90,12 @@ public class ConnectionFragment extends Fragment {
 
         return rootView;
     }
+
+    @Override
+    public void onStop(){
+        if(mSpheroConnectionView != null){
+            mSpheroConnectionView.clearListeners();
+        }
+        super.onStop();
+    }
 }
