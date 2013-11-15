@@ -1,5 +1,6 @@
 package edu.berkeley.spheromapper;
 
+import java.util.ArrayList;
 import java.util.List;
 import android.app.Activity;
 import android.content.DialogInterface;
@@ -11,10 +12,20 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import orbotix.robot.base.CollisionDetectedAsyncData;
+import orbotix.robot.sensor.DeviceSensorsData;
+import orbotix.robot.sensor.LocatorData;
+import orbotix.sphero.CollisionListener;
+import orbotix.sphero.SensorListener;
 import orbotix.sphero.Sphero;
 import orbotix.robot.base.RobotProvider;
+import orbotix.sphero.SensorFlag;
 
 
 /**
@@ -24,9 +35,17 @@ public class ManualDriveFragment extends Fragment {
     private View rootView;
     private Sphero mSphero;
 
+    private boolean logNextLocationPoll = false;
+
+    private List<LocatorData> collisionLocations;
+
+    private ArrayAdapter mAdapter;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.fragment_manual_drive, container, false);
+
+        collisionLocations = new ArrayList<LocatorData>();
 
         hasSphero(); // this sets mSphero
 
@@ -41,6 +60,9 @@ public class ManualDriveFragment extends Fragment {
         for(Button button : buttons){
             button.setOnTouchListener(directionalListener);
         }
+
+        mAdapter = new ArrayAdapter(getActivity(), R.id.collision_list_view, collisionLocations);
+        ((ListView) rootView.findViewById(R.id.collision_list_view)).setAdapter(mAdapter);
 
         return rootView;
     }
@@ -60,8 +82,37 @@ public class ManualDriveFragment extends Fragment {
         }
 
         if(mSphero != null){
+            mSphero.getSensorControl().setRate(5);
+            mSphero.getSensorControl().addSensorListener(new SensorListener() {
+                @Override
+                public void sensorUpdated(DeviceSensorsData deviceSensorsData) {
+                    LocatorData locatorData = deviceSensorsData.getLocatorData();
+                    float x = locatorData.getPositionX();
+                    float y = locatorData.getPositionY();
+
+                    ((TextView) rootView.findViewById(R.id.location_text)).setText("(" + x + ", " + y + ")");
+
+                    if(logNextLocationPoll){
+                        collisionLocations.add(locatorData);
+
+                        logNextLocationPoll = false;
+                    }
+                }
+            }, SensorFlag.ACCELEROMETER_NORMALIZED, SensorFlag.ATTITUDE, SensorFlag.LOCATOR);
+
+            mSphero.getCollisionControl().startDetection(10, 10, 10, 10, 10);
+            mSphero.getCollisionControl().addCollisionListener(new CollisionListener() {
+                @Override
+                public void collisionDetected(CollisionDetectedAsyncData collisionDetectedAsyncData) {
+                    Log.i("ManualDrive", "Collision detected!");
+                    logNextLocationPoll = true;
+                }
+            });
+
             return true;
         }
+
+
         return false;
     }
 
