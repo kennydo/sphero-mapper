@@ -63,7 +63,7 @@ public class ConnectionFragment extends Fragment {
             public void onDisconnected(Robot sphero){
                 Log.i("ConnectionFragment", "onDisconnected fired");
 
-                mSpheroConnectionView.startDiscovery();
+                //mSpheroConnectionView.startDiscovery();
             }
         });
 

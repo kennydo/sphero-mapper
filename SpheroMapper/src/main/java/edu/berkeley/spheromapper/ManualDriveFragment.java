@@ -7,6 +7,7 @@ import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -29,21 +30,17 @@ public class ManualDriveFragment extends Fragment {
 
         hasSphero(); // this sets mSphero
 
-        OnClickListener directionalistener = new DirectionalClickListener();
-        OnClickListener stopListener = new StopClickListener();
+        DirectionalTouchListener directionalListener = new DirectionalTouchListener();
 
         Button[] buttons = {
                 (Button) rootView.findViewById(R.id.up_button),
                 (Button) rootView.findViewById(R.id.left_button),
                 (Button) rootView.findViewById(R.id.down_button),
                 (Button) rootView.findViewById(R.id.right_button),
-                (Button) rootView.findViewById(R.id.stop_button),
         };
         for(Button button : buttons){
-            button.setOnClickListener(directionalistener);
+            button.setOnTouchListener(directionalListener);
         }
-
-        rootView.findViewById(R.id.stop_button).setOnClickListener(stopListener);
 
         return rootView;
     }
@@ -68,38 +65,40 @@ public class ManualDriveFragment extends Fragment {
         return false;
     }
 
-    private class DirectionalClickListener implements View.OnClickListener{
-        public void onClick(View v){
-            if(!hasSphero()){ return; }
+    private class DirectionalTouchListener implements View.OnTouchListener{
+        @Override
+        public boolean onTouch(View v, MotionEvent event)
+        {
+            if(!hasSphero()){ return false; }
 
-            float heading;
-            switch(v.getId()){
-                case R.id.up_button:
-                    heading = 0f;
-                    break;
-                case R.id.left_button:
-                    heading = 270f;
-                    break;
-                case R.id.right_button:
-                    heading = 90f;
-                    break;
-                case R.id.down_button:
-                    heading = 180f;
-                    break;
-                default:
-                    heading = 0f;
+            if (event.getAction() == MotionEvent.ACTION_DOWN){
+                float heading;
+                switch(v.getId()){
+                    case R.id.up_button:
+                        heading = 0f;
+                        break;
+                    case R.id.left_button:
+                        heading = 270f;
+                        break;
+                    case R.id.right_button:
+                        heading = 90f;
+                        break;
+                    case R.id.down_button:
+                        heading = 180f;
+                        break;
+                    default:
+                        heading = 0f;
+                }
+                float speed = 0.6f;
+
+                mSphero.drive(heading, speed);
+                return true;
+            } else if (event.getAction() == MotionEvent.ACTION_UP){
+                mSphero.stop();
+                return true;
             }
-            float speed = 0.6f;
 
-
-            mSphero.drive(heading, speed);
-        }
-    }
-
-    private class StopClickListener implements View.OnClickListener{
-        public void onClick(View v){
-            if(!hasSphero()){ return; }
-            mSphero.stop();
+            return false;
         }
     }
 }
