@@ -1,8 +1,12 @@
 package edu.berkeley.spheromapper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import android.app.Activity;
+import android.support.v4.app.ListFragment;
 import android.content.DialogInterface;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
@@ -12,15 +16,19 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.Adapter;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import orbotix.robot.base.CollisionDetectedAsyncData;
 import orbotix.robot.sensor.DeviceSensorsData;
 import orbotix.robot.sensor.LocatorData;
+import orbotix.robot.sensor.LocatorSensor;
 import orbotix.sphero.CollisionListener;
 import orbotix.sphero.SensorListener;
 import orbotix.sphero.Sphero;
@@ -31,13 +39,14 @@ import orbotix.sphero.SensorFlag;
 /**
  * Created by kedo on 11/7/13.
  */
-public class ManualDriveFragment extends Fragment {
+public class ManualDriveFragment extends ListFragment {
     private View rootView;
     private Sphero mSphero;
 
-    private boolean logNextLocationPoll = false;
+    private boolean logNextLocationPoll;
 
-    private List<LocatorData> collisionLocations;
+    private int collisionBufferSizeLimit = 7;
+    private List<String> collisionLocations;
 
     private ArrayAdapter mAdapter;
 
@@ -45,7 +54,8 @@ public class ManualDriveFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.fragment_manual_drive, container, false);
 
-        collisionLocations = new ArrayList<LocatorData>();
+        collisionLocations = new ArrayList<String>();
+        logNextLocationPoll = false;
 
         hasSphero(); // this sets mSphero
 
@@ -61,8 +71,18 @@ public class ManualDriveFragment extends Fragment {
             button.setOnTouchListener(directionalListener);
         }
 
-        mAdapter = new ArrayAdapter(getActivity(), R.id.collision_list_view, collisionLocations);
-        ((ListView) rootView.findViewById(R.id.collision_list_view)).setAdapter(mAdapter);
+        ListView collisionListView = (ListView) rootView.findViewById(android.R.id.list);
+
+        mAdapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_1, collisionLocations);
+        collisionListView.setAdapter(mAdapter);
+
+        ((Button) rootView.findViewById(R.id.clear_collisions_button)).setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                collisionLocations.clear();
+                mAdapter.notifyDataSetChanged();
+            }
+        });
 
         return rootView;
     }
@@ -90,17 +110,23 @@ public class ManualDriveFragment extends Fragment {
                     float x = locatorData.getPositionX();
                     float y = locatorData.getPositionY();
 
-                    ((TextView) rootView.findViewById(R.id.location_text)).setText("(" + x + ", " + y + ")");
+                    String coordinates = "(" + x + ", " + y + ")";
+
+                    ((TextView) rootView.findViewById(R.id.location_text)).setText(coordinates);
 
                     if(logNextLocationPoll){
-                        collisionLocations.add(locatorData);
-
+                        Log.d("ManualDrive", "Collision logged at: " + coordinates);
+                        collisionLocations.add(0, coordinates); // we want the most recent at the top of the list
+                        for(int i=collisionLocations.size() - 1; i > collisionBufferSizeLimit; i--){
+                            collisionLocations.remove(i);
+                        }
+                        mAdapter.notifyDataSetChanged();
                         logNextLocationPoll = false;
                     }
                 }
             }, SensorFlag.ACCELEROMETER_NORMALIZED, SensorFlag.ATTITUDE, SensorFlag.LOCATOR);
 
-            mSphero.getCollisionControl().startDetection(10, 10, 10, 10, 10);
+            mSphero.getCollisionControl().startDetection(40, 60, 40, 60, 40);
             mSphero.getCollisionControl().addCollisionListener(new CollisionListener() {
                 @Override
                 public void collisionDetected(CollisionDetectedAsyncData collisionDetectedAsyncData) {
