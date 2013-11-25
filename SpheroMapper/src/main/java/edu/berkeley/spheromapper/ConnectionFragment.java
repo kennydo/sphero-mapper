@@ -29,6 +29,10 @@ public class ConnectionFragment extends Fragment {
     private Activity activity;
     private View rootView;
 
+    public interface SpheroConnectionListener {
+        public void onSpheroConnected(Robot sphero);
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.fragment_connection, container, false);
@@ -45,7 +49,8 @@ public class ConnectionFragment extends Fragment {
             public void onConnected(Robot sphero){
                 Log.i("ConnectionFragment", "onConnected fired");
 
-                Toast.makeText(activity, "Successfully connected to Sphero", Toast.LENGTH_LONG).show();
+                // It looks like the SDK automatically pops up a Toast, so we don't need to make our own.
+                //Toast.makeText(activity, "Successfully connected to Sphero", Toast.LENGTH_LONG).show();
 
                 // Skip this next step if you want the user to be able to connect multiple Spheros
                 //mSpheroConnectionView.setVisibility(View.GONE);
