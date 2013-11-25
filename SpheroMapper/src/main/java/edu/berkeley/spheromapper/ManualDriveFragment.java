@@ -46,15 +46,18 @@ public class ManualDriveFragment extends ListFragment {
     private boolean logNextLocationPoll;
 
     private int collisionBufferSizeLimit = 7;
-    private List<String> collisionLocations;
+    private ArrayList<String> collisionLocations;
 
     private ArrayAdapter mAdapter;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.fragment_manual_drive, container, false);
-
-        collisionLocations = new ArrayList<String>();
+        if(savedInstanceState != null && savedInstanceState.containsKey("collisionLocations")){
+            collisionLocations = savedInstanceState.getStringArrayList("collisionLocations");
+        } else {
+            collisionLocations = new ArrayList<String>();
+        }
         logNextLocationPoll = false;
 
         hasSphero(); // this sets mSphero
@@ -87,6 +90,12 @@ public class ManualDriveFragment extends ListFragment {
         return rootView;
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState){
+        super.onSaveInstanceState(outState);
+        outState.putStringArrayList("collisionLocations", collisionLocations);
+    }
+
     private boolean hasSphero(){
         if(mSphero != null){
             return true;
@@ -95,7 +104,12 @@ public class ManualDriveFragment extends ListFragment {
         List<Sphero> robots = RobotProvider.getDefaultProvider().getRobots();
         Log.d("ManualDrive", "Got these robots: " + robots.toString());
         if(robots.size() > 0){
-            mSphero = robots.get(0);
+            Sphero candidateSphero = robots.get(0);
+            if(!candidateSphero.isConnected()){
+                Log.e("ManualDrive", "Had to manually set connected to True");
+                candidateSphero.setConnected(true);
+            }
+            mSphero = candidateSphero;
         } else {
             Log.d("ManualDrive", "No sphero connected");
             Toast.makeText(getActivity(), "No Sphero Connected", Toast.LENGTH_LONG);

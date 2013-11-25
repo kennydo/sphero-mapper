@@ -23,7 +23,7 @@ import orbotix.view.calibration.CalibrationView;
 import orbotix.view.connection.SpheroConnectionView;
 import orbotix.view.connection.SpheroConnectionView.OnRobotConnectionEventListener;
 
-public class MainActivity extends ActionBarActivity implements ActionBar.OnNavigationListener {
+public class MainActivity extends ActionBarActivity implements ActionBar.OnNavigationListener, ConnectionFragment.SpheroConnectionListener {
 
     /**
      * The serialization (saved instance state) Bundle key representing the
@@ -54,7 +54,6 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
                                 getString(R.string.title_section3),
                         }),
                 this);
-
 
     }
 
@@ -123,6 +122,11 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
                 .replace(R.id.container, fragment)
                 .commit();
         return true;
+    }
+
+    @Override
+    public void onSpheroConnected(Robot sphero) {
+
     }
 
     /**

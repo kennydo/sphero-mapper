@@ -55,6 +55,7 @@ public class ConnectionFragment extends Fragment {
                 // Skip this next step if you want the user to be able to connect multiple Spheros
                 //mSpheroConnectionView.setVisibility(View.GONE);
                 //Log.d("Sphero", "set visibility of mSpheroConnectionView to GNONE");
+                RobotProvider.getDefaultProvider().endDiscovery();
             }
 
             // Invoked when Sphero fails to complete a connect request
