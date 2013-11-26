@@ -67,6 +67,7 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
                         android.R.id.text1,
                         new String[]{
                                 getString(R.string.title_manual_drive),
+                                getString(R.string.title_view_map),
                                 getString(R.string.title_section3),
                         }),
                 this);
@@ -191,7 +192,9 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
             case 0: // manual drive
                 fragment = new ManualDriveFragment();
                 break;
-
+            case 1: // view map
+                fragment = new ViewMapFragment();
+                break;
             default:
                 fragment = new ManualDriveFragment();
         }
