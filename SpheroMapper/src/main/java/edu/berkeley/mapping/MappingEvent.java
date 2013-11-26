@@ -10,29 +10,6 @@ package edu.berkeley.mapping;
  * Class used to describe any event for the mapping algorithm.
  */
 public class MappingEvent {
-	/**
-	 * Defines a collision event.
-	 *	- (x,y) is the position where the collision occurred.
-	 *  - angle is the angle variation of where, in the robot, the collision
-	 * occurred and the robot's heading.
-	 */
-	public static final int COLLISION = 1;
-	/**
-	 * This type of event must be reported when the robot reaches the distance
-	 * given to the Commander in method drive.
-	 *	- (x,y) is the robot's position in the moment this event occurred.
-	 *  - angle is the robot's heading.
-	 * occurred and the robot's heading.
-	 * @see Commander
-	 */
-	public static final int DISTANCE_REACHED = 2;
-	/**
-	 * This type of event must be reported when the robot completes a square
-	 * without a collision.
-	 *	- (x,y) is the robot's position in the moment this event occurred.
-	 *	- angle is the robot's heading.
-	 */
-	public static final int SQUARE_COMPLETED = 3;
 	
 	/**
 	 * The event type.
@@ -41,7 +18,7 @@ public class MappingEvent {
 	 *	- DISTANCE_REACHED
 	 *	- SQUARE_COMPLETED
 	 */
-	private int type;
+	private MappingEventType type;
 	
 	/**
 	 * Variable representing the x position of the robot.
@@ -62,13 +39,13 @@ public class MappingEvent {
 	private float angle;
 
 	
-	public MappingEvent(int type, float x, float y) {
+	public MappingEvent(MappingEventType type, float x, float y) {
 		this.type = type;
 		this.x = x;
 		this.y = y;
 	}
 
-	public MappingEvent(int type, float x, float y, float angle) {
+	public MappingEvent(MappingEventType type, float x, float y, float angle) {
 		this.type = type;
 		this.x = x;
 		this.y = y;
@@ -83,7 +60,7 @@ public class MappingEvent {
 	 *	- DISTANCE_REACHED
 	 *	- SQUARE_COMPLETED
 	 */
-	public int getType() {
+	public MappingEventType getType() {
 		return type;
 	}
 
