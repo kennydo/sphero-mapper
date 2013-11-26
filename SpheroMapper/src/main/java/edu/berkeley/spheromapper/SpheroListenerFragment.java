@@ -1,8 +1,8 @@
 package edu.berkeley.spheromapper;
 
 import orbotix.robot.base.CollisionDetectedAsyncData;
-import orbotix.robot.base.Robot;
 import orbotix.robot.sensor.DeviceSensorsData;
+import orbotix.sphero.Sphero;
 
 /**
  * Created by kedo on 11/25/13.
@@ -17,12 +17,13 @@ public interface SpheroListenerFragment {
     /*
     This data is polled, so it will happen frequently.
      */
-    public void onSpheroLocationUpdate(DeviceSensorsData sensorsData);
+    public void onSpheroSensorsUpdate(DeviceSensorsData sensorsData);
 
     /*
     Collisions are detected asynchronously
+    We also add on the sensorsData of the Sphero immediately after the collision was detected
      */
-    public void onSpheroCollision(CollisionDetectedAsyncData collisionData);
+    public void onSpheroCollision(CollisionDetectedAsyncData collisionData, DeviceSensorsData sensorsData);
 
     /*
     We call this method whenever the sphero is connected.
@@ -31,5 +32,5 @@ public interface SpheroListenerFragment {
     Also, all calls to onLocationUpdate and onCollision will only happen we pass a valid
     sphero through onConnected to the fragment
      */
-    public void onSpheroConnected(Robot sphero);
+    public void setSphero(Sphero sphero);
 }

@@ -26,6 +26,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import orbotix.robot.base.CollisionDetectedAsyncData;
+import orbotix.robot.base.Robot;
 import orbotix.robot.sensor.DeviceSensorsData;
 import orbotix.robot.sensor.LocatorData;
 import orbotix.robot.sensor.LocatorSensor;
@@ -43,8 +44,6 @@ public class ManualDriveFragment extends ListFragment implements SpheroListenerF
     private View rootView;
     private Sphero mSphero;
 
-    private boolean logNextLocationPoll;
-
     private int collisionBufferSizeLimit = 7;
     private ArrayList<String> collisionLocations;
 
@@ -58,9 +57,6 @@ public class ManualDriveFragment extends ListFragment implements SpheroListenerF
         } else {
             collisionLocations = new ArrayList<String>();
         }
-        logNextLocationPoll = false;
-
-        hasSphero(); // this sets mSphero
 
         DirectionalTouchListener directionalListener = new DirectionalTouchListener();
 
@@ -96,71 +92,11 @@ public class ManualDriveFragment extends ListFragment implements SpheroListenerF
         outState.putStringArrayList("collisionLocations", collisionLocations);
     }
 
-    private boolean hasSphero(){
-        if(mSphero != null){
-            return true;
-        }
-
-        List<Sphero> robots = RobotProvider.getDefaultProvider().getRobots();
-        Log.d("ManualDrive", "Got these robots: " + robots.toString());
-        if(robots.size() > 0){
-            Sphero candidateSphero = robots.get(0);
-            if(!candidateSphero.isConnected()){
-                Log.e("ManualDrive", "Had to manually set connected to True");
-                candidateSphero.setConnected(true);
-            }
-            mSphero = candidateSphero;
-        } else {
-            Log.d("ManualDrive", "No sphero connected");
-            Toast.makeText(getActivity(), "No Sphero Connected", Toast.LENGTH_LONG);
-        }
-
-        if(mSphero != null){
-            mSphero.getSensorControl().setRate(5);
-            mSphero.getSensorControl().addSensorListener(new SensorListener() {
-                @Override
-                public void sensorUpdated(DeviceSensorsData deviceSensorsData) {
-                    LocatorData locatorData = deviceSensorsData.getLocatorData();
-                    float x = locatorData.getPositionX();
-                    float y = locatorData.getPositionY();
-
-                    String coordinates = "(" + x + ", " + y + ")";
-
-                    ((TextView) rootView.findViewById(R.id.location_text)).setText(coordinates);
-
-                    if(logNextLocationPoll){
-                        Log.d("ManualDrive", "Collision logged at: " + coordinates);
-                        collisionLocations.add(0, coordinates); // we want the most recent at the top of the list
-                        for(int i=collisionLocations.size() - 1; i > collisionBufferSizeLimit; i--){
-                            collisionLocations.remove(i);
-                        }
-                        mAdapter.notifyDataSetChanged();
-                        logNextLocationPoll = false;
-                    }
-                }
-            }, SensorFlag.ACCELEROMETER_NORMALIZED, SensorFlag.ATTITUDE, SensorFlag.LOCATOR);
-
-            mSphero.getCollisionControl().startDetection(40, 60, 40, 60, 40);
-            mSphero.getCollisionControl().addCollisionListener(new CollisionListener() {
-                @Override
-                public void collisionDetected(CollisionDetectedAsyncData collisionDetectedAsyncData) {
-                    Log.i("ManualDrive", "Collision detected!");
-                    logNextLocationPoll = true;
-                }
-            });
-
-            return true;
-        }
-
-
-        return false;
-    }
-
     private class DirectionalTouchListener implements View.OnTouchListener{
         @Override
         public boolean onTouch(View v, MotionEvent event)
         {
-            if(!hasSphero()){ return false; }
+            if(mSphero == null){ return false; }
 
             if (event.getAction() == MotionEvent.ACTION_DOWN){
                 float heading;
@@ -191,5 +127,34 @@ public class ManualDriveFragment extends ListFragment implements SpheroListenerF
 
             return false;
         }
+    }
+
+    public void onSpheroSensorsUpdate(DeviceSensorsData sensorsData){
+        LocatorData locatorData = sensorsData.getLocatorData();
+
+        String coordinates = locatorDataToString(locatorData);
+        ((TextView) rootView.findViewById(R.id.location_text)).setText(coordinates);
+    }
+
+    public void onSpheroCollision(CollisionDetectedAsyncData collisionData, DeviceSensorsData sensorsData){
+        LocatorData locatorData = sensorsData.getLocatorData();
+        String coordinates = locatorDataToString(locatorData);
+        Log.d("ManualDrive", "Collision logged at: " + coordinates);
+        collisionLocations.add(0, coordinates); // we want the most recent at the top of the list
+        for(int i=collisionLocations.size() - 1; i > collisionBufferSizeLimit; i--){
+            collisionLocations.remove(i);
+        }
+        mAdapter.notifyDataSetChanged();
+    }
+
+    public void setSphero(Sphero sphero){
+        mSphero = sphero;
+    }
+
+    private String locatorDataToString(LocatorData locatorData){
+        float x = locatorData.getPositionX();
+        float y = locatorData.getPositionY();
+
+        return "(" + x + ", " + y + ")";
     }
 }

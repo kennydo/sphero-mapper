@@ -9,14 +9,20 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.util.Log;
 
 import java.util.List;
 
 import orbotix.robot.base.*;
+import orbotix.robot.sensor.DeviceSensorsData;
+import orbotix.robot.sensor.LocatorData;
+import orbotix.sphero.CollisionListener;
 import orbotix.sphero.ConnectionListener;
 import orbotix.sphero.DiscoveryListener;
+import orbotix.sphero.SensorFlag;
+import orbotix.sphero.SensorListener;
 import orbotix.sphero.Sphero;
 import orbotix.view.connection.SpheroConnectionView;
 
@@ -30,6 +36,8 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
     private SpheroConnectionView mSpheroConnectionView;
     private Sphero mSphero;
     private SpheroListenerFragment activeFragment;
+    private boolean logNextSensorsData = false;
+    private CollisionDetectedAsyncData previousCollisionDetectedAsyncData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,15 +73,7 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
             @Override
             public void onConnected(Robot sphero){
                 Log.i("Connection", "onConnected fired");
-
-                // It looks like the SDK automatically pops up a Toast, so we don't need to make our own.
-                //Toast.makeText(activity, "Successfully connected to Sphero", Toast.LENGTH_LONG).show();
-
-                // Skip this next step if you want the user to be able to connect multiple Spheros
-                mSpheroConnectionView.setVisibility(View.INVISIBLE);
-                Log.d("Sphero", "set visibility of mSpheroConnectionView to INVISIBLE");
-
-                actionBar.show();
+                onSpheroConnected(sphero);
             }
 
             // Invoked when Sphero fails to complete a connect request
@@ -186,6 +186,7 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
             default:
                 fragment = new ManualDriveFragment();
         }
+        ((SpheroListenerFragment) fragment).setSphero(mSphero);
        getSupportFragmentManager().beginTransaction()
                 .replace(R.id.container, fragment)
                 .commit();
@@ -201,5 +202,46 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
 
         // Disconnect from the robot.
         RobotProvider.getDefaultProvider().removeAllControls();
+    }
+
+    private void onSpheroConnected(Robot sphero){
+        // It looks like the SDK automatically pops up a Toast, so we don't need to make our own.
+        //Toast.makeText(activity, "Successfully connected to Sphero", Toast.LENGTH_LONG).show();
+
+        // Skip this next step if you want the user to be able to connect multiple Spheros
+        mSpheroConnectionView.setVisibility(View.INVISIBLE);
+        Log.d("Connection", "set visibility of mSpheroConnectionView to INVISIBLE");
+
+        getSupportActionBar().show();
+
+        mSphero = (Sphero) sphero;
+        mSphero.getSensorControl().setRate(5);
+        mSphero.getSensorControl().addSensorListener(new SensorListener() {
+            @Override
+            public void sensorUpdated(DeviceSensorsData deviceSensorsData) {
+                if(activeFragment != null){
+                    activeFragment.onSpheroSensorsUpdate(deviceSensorsData);
+                    if(logNextSensorsData){
+                        Log.i("MainActivity", "Called fragment's collision callback");
+                        activeFragment.onSpheroCollision(previousCollisionDetectedAsyncData, deviceSensorsData);
+                        logNextSensorsData = false;
+                    }
+                }
+            }
+        }, SensorFlag.ACCELEROMETER_NORMALIZED, SensorFlag.ATTITUDE, SensorFlag.LOCATOR);
+
+        mSphero.getCollisionControl().startDetection(40, 60, 40, 60, 40);
+        mSphero.getCollisionControl().addCollisionListener(new CollisionListener() {
+            @Override
+            public void collisionDetected(CollisionDetectedAsyncData collisionDetectedAsyncData) {
+                Log.i("MainActivity", "Collision detected!");
+                if(activeFragment != null){
+                    previousCollisionDetectedAsyncData = collisionDetectedAsyncData;
+                    logNextSensorsData = true;
+                }
+            }
+        });
+
+
     }
 }
