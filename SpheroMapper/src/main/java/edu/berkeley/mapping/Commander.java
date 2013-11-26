@@ -5,7 +5,7 @@ package edu.berkeley.mapping;
  * The mapping algorithm user must implement the methods defined in this
  * interface, since the mapper will use them.
  * @version 1.0
- * @see Mapping
+ * @see Mapper
  */
 public interface Commander {
 	/**
@@ -32,7 +32,7 @@ public interface Commander {
 	 * SQUARE_COMPLETED.
 	 * If a collision is detected before the square is completed, then a
 	 * MappingEvent of type COLLISION must be reported.
-	 * @see Mapping
+	 * @see Mapper
 	 */
 	public void makeLeftSquare();
 	/**
@@ -42,7 +42,7 @@ public interface Commander {
 	 * SQUARE_COMPLETED.
 	 * If a collision is detected before the square is completed, then a
 	 * MappingEvent of type COLLISION must be reported.
-	 * @see Mapping
+	 * @see Mapper
 	 */
 	public void makeRightSquare();
 	/**
