@@ -3,7 +3,7 @@ package edu.berkeley.mapping;
 /**
  * The class that implements the mapping algorithm.
  */
-public class Mapping {
+public class Mapper {
 	/**
 	 * The commander object for the mapper.
 	 */
@@ -13,7 +13,7 @@ public class Mapping {
 	 * 
 	 * @param commander The commander object for the mapper.
 	 */
-	public Mapping(Commander commander) {
+	public Mapper(Commander commander) {
 		this.commander = commander;
 	}
 	/**
