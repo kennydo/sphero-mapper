@@ -30,7 +30,7 @@ import orbotix.view.calibration.CalibrationView;
 import orbotix.view.connection.SpheroConnectionView;
 import orbotix.view.connection.SpheroConnectionView.OnRobotConnectionEventListener;
 
-public class MainActivity extends ActionBarActivity implements ActionBar.OnNavigationListener, ConnectionFragment.SpheroConnectionListener {
+public class MainActivity extends ActionBarActivity implements ActionBar.OnNavigationListener {
 
     /**
      * The serialization (saved instance state) Bundle key representing the
@@ -62,17 +62,18 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
                                 getString(R.string.title_section3),
                         }),
                 this);
+        actionBar.hide();
 
         mSpheroConnectionView = (SpheroConnectionView) findViewById(R.id.sphero_connection_view);
 
-        Log.i("ConnectionFragment", "Robots: " + RobotProvider.getDefaultProvider().getRobots().toString());
+        Log.i("Connection", "Robots: " + RobotProvider.getDefaultProvider().getRobots().toString());
 
         // Set the connection event listener
         mSpheroConnectionView.addConnectionListener(new ConnectionListener() {
             // Invoked when Sphero is connected & ready for commands
             @Override
             public void onConnected(Robot sphero){
-                Log.i("ConnectionFragment", "onConnected fired");
+                Log.i("Connection", "onConnected fired");
 
                 // It looks like the SDK automatically pops up a Toast, so we don't need to make our own.
                 //Toast.makeText(activity, "Successfully connected to Sphero", Toast.LENGTH_LONG).show();
@@ -81,19 +82,19 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
                 mSpheroConnectionView.setVisibility(View.INVISIBLE);
                 Log.d("Sphero", "set visibility of mSpheroConnectionView to INVISIBLE");
 
-                onNavigationItemSelected(0, 0); // set it to manual drive
+                actionBar.show();
             }
 
             // Invoked when Sphero fails to complete a connect request
             @Override
             public void onConnectionFailed(Robot sphero){
-                Log.i("ConnectionFragment", "onConnectionFailed fired");
+                Log.i("Connection", "onConnectionFailed fired");
             }
 
             // Invoked when Sphero disconnects for any reason
             @Override
             public void onDisconnected(Robot sphero){
-                Log.i("ConnectionFragment", "onDisconnected fired");
+                Log.i("Connection", "onDisconnected fired");
 
                 mSpheroConnectionView.startDiscovery();
             }
@@ -102,19 +103,19 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
         mSpheroConnectionView.addDiscoveryListener(new DiscoveryListener() {
             @Override
             public void onBluetoothDisabled() {
-                Log.d("ConnectionFragment", "onBluetoothDisabled fired");
+                Log.d("Connection", "onBluetoothDisabled fired");
                 // See UISample Sample on how to show BT settings screen, for now just notify user
                 Toast.makeText(MainActivity.this, "Bluetooth not enabled", Toast.LENGTH_LONG).show();
             }
 
             @Override
             public void discoveryComplete(List<Sphero> spheros) {
-                Log.d("ConnectionFragment", "discoveryComplete fired");
+                Log.d("Connection", "discoveryComplete fired");
             }
 
             @Override
             public void onFound(List<Sphero> spheros) {
-                Log.d("ConnectionFragment", "onFound fired");
+                Log.d("Connection", "onFound fired");
             }
         });
     }
@@ -200,9 +201,12 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
         return true;
     }
 
+
     @Override
-    public void onSpheroConnected(Robot sphero) {
+    public void onStop(){
+        super.onStop();
 
+        // Disconnect from the robot.
+        RobotProvider.getDefaultProvider().removeAllControls();
     }
-
 }
