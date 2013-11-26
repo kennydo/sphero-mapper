@@ -1,5 +1,6 @@
 package edu.berkeley.spheromapper;
 
+import android.bluetooth.BluetoothAdapter;
 import android.graphics.Color;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
@@ -18,7 +19,13 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.util.Log;
+
+import java.util.List;
+
 import orbotix.robot.base.*;
+import orbotix.sphero.ConnectionListener;
+import orbotix.sphero.DiscoveryListener;
+import orbotix.sphero.Sphero;
 import orbotix.view.calibration.CalibrationView;
 import orbotix.view.connection.SpheroConnectionView;
 import orbotix.view.connection.SpheroConnectionView.OnRobotConnectionEventListener;
@@ -30,6 +37,8 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
      * current dropdown position.
      */
     private static final String STATE_SELECTED_NAVIGATION_ITEM = "selected_navigation_item";
+    private SpheroConnectionView mSpheroConnectionView;
+    private Sphero mSphero;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,12 +58,65 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
                         android.R.layout.simple_list_item_1,
                         android.R.id.text1,
                         new String[]{
-                                getString(R.string.title_connection),
                                 getString(R.string.title_manual_drive),
                                 getString(R.string.title_section3),
                         }),
                 this);
 
+        mSpheroConnectionView = (SpheroConnectionView) findViewById(R.id.sphero_connection_view);
+
+        Log.i("ConnectionFragment", "Robots: " + RobotProvider.getDefaultProvider().getRobots().toString());
+
+        // Set the connection event listener
+        mSpheroConnectionView.addConnectionListener(new ConnectionListener() {
+            // Invoked when Sphero is connected & ready for commands
+            @Override
+            public void onConnected(Robot sphero){
+                Log.i("ConnectionFragment", "onConnected fired");
+
+                // It looks like the SDK automatically pops up a Toast, so we don't need to make our own.
+                //Toast.makeText(activity, "Successfully connected to Sphero", Toast.LENGTH_LONG).show();
+
+                // Skip this next step if you want the user to be able to connect multiple Spheros
+                mSpheroConnectionView.setVisibility(View.INVISIBLE);
+                Log.d("Sphero", "set visibility of mSpheroConnectionView to INVISIBLE");
+
+                onNavigationItemSelected(0, 0); // set it to manual drive
+            }
+
+            // Invoked when Sphero fails to complete a connect request
+            @Override
+            public void onConnectionFailed(Robot sphero){
+                Log.i("ConnectionFragment", "onConnectionFailed fired");
+            }
+
+            // Invoked when Sphero disconnects for any reason
+            @Override
+            public void onDisconnected(Robot sphero){
+                Log.i("ConnectionFragment", "onDisconnected fired");
+
+                mSpheroConnectionView.startDiscovery();
+            }
+        });
+
+        mSpheroConnectionView.addDiscoveryListener(new DiscoveryListener() {
+            @Override
+            public void onBluetoothDisabled() {
+                Log.d("ConnectionFragment", "onBluetoothDisabled fired");
+                // See UISample Sample on how to show BT settings screen, for now just notify user
+                Toast.makeText(MainActivity.this, "Bluetooth not enabled", Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void discoveryComplete(List<Sphero> spheros) {
+                Log.d("ConnectionFragment", "discoveryComplete fired");
+            }
+
+            @Override
+            public void onFound(List<Sphero> spheros) {
+                Log.d("ConnectionFragment", "onFound fired");
+            }
+        });
     }
 
     /**
@@ -63,6 +125,18 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
     @Override
     protected void onResume() {
         super.onResume();
+        if(mSpheroConnectionView != null) {
+            mSpheroConnectionView.startDiscovery();
+        }
+    }
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+        BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
+        if (mSphero != null) {
+            mSphero.disconnect(); // Disconnect Robot properly
+        }
     }
 
     @Override
@@ -106,12 +180,14 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
     public boolean onNavigationItemSelected(int position, long id) {
         // When the given dropdown item is selected, show its contents in the
         // container view.
+        if(mSpheroConnectionView.getVisibility() != View.INVISIBLE){
+            Log.e("MainActivity", "Tried to call onNavigationItemSelected when mSpheroConnectionView is not invisible");
+            return false;
+        }
+
         Fragment fragment;
         switch(position){
-            case 0: // connection
-                fragment = new ConnectionFragment();
-                break;
-            case 1: // manual drive
+            case 0: // manual drive
                 fragment = new ManualDriveFragment();
                 break;
 
@@ -127,50 +203,6 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
     @Override
     public void onSpheroConnected(Robot sphero) {
 
-    }
-
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment {
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
-        private static final String ARG_SECTION_NUMBER = "section_number";
-
-        /**
-         * Returns a new instance of this fragment for the given section
-         * number.
-         */
-        public static PlaceholderFragment newInstance(int sectionNumber) {
-            PlaceholderFragment fragment = new PlaceholderFragment();
-            Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            fragment.setArguments(args);
-            return fragment;
-        }
-
-        public PlaceholderFragment() {
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-            TextView textView = (TextView) rootView.findViewById(R.id.section_label);
-            textView.setText(Integer.toString(getArguments().getInt(ARG_SECTION_NUMBER)));
-            return rootView;
-        }
-    }
-
-
-    @Override
-    public void onStop(){
-        super.onStop();
-
-        // Disconnect from the robot.
-        RobotProvider.getDefaultProvider().removeAllControls();
     }
 
 }
