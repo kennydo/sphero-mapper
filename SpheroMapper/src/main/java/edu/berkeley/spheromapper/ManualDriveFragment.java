@@ -39,7 +39,7 @@ import orbotix.sphero.SensorFlag;
 /**
  * Created by kedo on 11/7/13.
  */
-public class ManualDriveFragment extends ListFragment {
+public class ManualDriveFragment extends ListFragment implements SpheroListenerFragment {
     private View rootView;
     private Sphero mSphero;
 

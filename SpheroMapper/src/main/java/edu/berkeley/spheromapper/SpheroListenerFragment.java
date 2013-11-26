@@ -2,12 +2,12 @@ package edu.berkeley.spheromapper;
 
 import orbotix.robot.base.CollisionDetectedAsyncData;
 import orbotix.robot.base.Robot;
-import orbotix.robot.sensor.LocatorData;
+import orbotix.robot.sensor.DeviceSensorsData;
 
 /**
  * Created by kedo on 11/25/13.
  */
-public interface SpheroListener {
+public interface SpheroListenerFragment {
     /*
     These are the methods that Fragments must implement if they want to listen to Sphero's updates,
     since the sphero's updates are sent from the MainActivity to each subordinate Fragment
@@ -17,12 +17,12 @@ public interface SpheroListener {
     /*
     This data is polled, so it will happen frequently.
      */
-    public void onLocationUpdate(LocatorData locatorData);
+    public void onSpheroLocationUpdate(DeviceSensorsData sensorsData);
 
     /*
     Collisions are detected asynchronously
      */
-    public void onCollision(CollisionDetectedAsyncData collisionData);
+    public void onSpheroCollision(CollisionDetectedAsyncData collisionData);
 
     /*
     We call this method whenever the sphero is connected.
@@ -31,5 +31,5 @@ public interface SpheroListener {
     Also, all calls to onLocationUpdate and onCollision will only happen we pass a valid
     sphero through onConnected to the fragment
      */
-    public void onConnected(Robot sphero);
+    public void onSpheroConnected(Robot sphero);
 }

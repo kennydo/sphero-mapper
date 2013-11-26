@@ -1,22 +1,14 @@
 package edu.berkeley.spheromapper;
 
 import android.bluetooth.BluetoothAdapter;
-import android.graphics.Color;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
-import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
-import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.TextView;
 import android.widget.Toast;
 import android.util.Log;
 
@@ -26,9 +18,7 @@ import orbotix.robot.base.*;
 import orbotix.sphero.ConnectionListener;
 import orbotix.sphero.DiscoveryListener;
 import orbotix.sphero.Sphero;
-import orbotix.view.calibration.CalibrationView;
 import orbotix.view.connection.SpheroConnectionView;
-import orbotix.view.connection.SpheroConnectionView.OnRobotConnectionEventListener;
 
 public class MainActivity extends ActionBarActivity implements ActionBar.OnNavigationListener {
 
@@ -39,6 +29,7 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
     private static final String STATE_SELECTED_NAVIGATION_ITEM = "selected_navigation_item";
     private SpheroConnectionView mSpheroConnectionView;
     private Sphero mSphero;
+    private SpheroListenerFragment activeFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -198,6 +189,8 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
        getSupportFragmentManager().beginTransaction()
                 .replace(R.id.container, fragment)
                 .commit();
+
+        activeFragment = (SpheroListenerFragment) fragment;
         return true;
     }
 
