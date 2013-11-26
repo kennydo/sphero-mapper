@@ -242,7 +242,6 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
                         for(int i=collisionLocationHistory.size(); i >= MAX_NUM_COLLISION_HISTORY; i--){
                             collisionLocationHistory.remove(i);
                         }
-                        Log.e("MainActivity", collisionLocationHistory.toString());
                     }
                 }
             }

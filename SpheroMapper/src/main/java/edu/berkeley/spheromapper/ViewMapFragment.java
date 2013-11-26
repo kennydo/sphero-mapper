@@ -13,8 +13,11 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 
+import java.util.List;
+
 import orbotix.robot.base.CollisionDetectedAsyncData;
 import orbotix.robot.sensor.DeviceSensorsData;
+import orbotix.robot.sensor.LocatorData;
 import orbotix.sphero.Sphero;
 
 /**
@@ -23,12 +26,23 @@ import orbotix.sphero.Sphero;
 public class ViewMapFragment extends Fragment implements SpheroListenerFragment {
 
     private View rootView;
-    private SurfaceView surface;
+    private MapSurfaceView surface;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.fragment_view_map, container, false);
+        surface = (MapSurfaceView) rootView.findViewById(R.id.map_surface_view);
+
+        populateCollisionHistory(((CollisionLocationHistoryProvider) getActivity()).getCollisionLocations());
         return rootView;
+    }
+
+    public void populateCollisionHistory(List<LocatorData> locations){
+        if(locations != null){
+            for(int i=locations.size() - 1; i >= 0; i--){
+                surface.addCollision(locations.get(i));
+            }
+        }
     }
 
     @Override
@@ -38,7 +52,7 @@ public class ViewMapFragment extends Fragment implements SpheroListenerFragment 
 
     @Override
     public void onSpheroCollision(CollisionDetectedAsyncData collisionData, DeviceSensorsData sensorsData) {
-
+        surface.addCollision(sensorsData.getLocatorData());
     }
 
     @Override

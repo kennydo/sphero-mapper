@@ -11,11 +11,19 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import orbotix.robot.sensor.LocatorData;
+
 /**
  * Created by kedo on 11/25/13.
  */
 public class MapSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
     private MapThread thread;
+    private List<LocatorData> collisions;
+    private Float xMax, xMin, yMax, yMin;
+    private Float xAbsMax, yAbsMax;
 
     private class MapThread extends Thread{
         private SurfaceHolder mSurfaceHolder;
@@ -62,11 +70,27 @@ public class MapSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
         }
 
         private void doDraw(Canvas c){
-            c.drawColor(Color.BLUE);
-            c.drawCircle(0, 0, 10, collisionPaint);
-            c.drawCircle(30, 0, 10, collisionPaint);
-            c.drawCircle(0, 60, 10, collisionPaint);
-            c.drawCircle((float) (getWidth() / 2.0), (float) (getHeight() / 2.0), 100, collisionPaint);
+            c.drawColor(Color.DKGRAY);
+
+            float centerX = getWidth() / 2;
+            float centerY = getHeight() / 2;
+            //Log.i("MapSurfaceView", "centerX=" + centerX + ", centerY=" + centerY);
+            //Log.i("MapSurfaceView", collisions.toString());
+
+            float x, y;
+            float drawX, drawY;
+            float xDiff = xMax - xMin;
+            float yDiff = yMax - yMin;
+            for(LocatorData location : collisions){
+                x = location.getPositionX();
+                y = location.getPositionY();
+
+                drawX = centerX + ((x - xDiff) * (centerX / xAbsMax));
+                drawY = centerY + ((y - yDiff) * (centerY / yAbsMax));
+
+                c.drawCircle(drawX, drawY, 10, collisionPaint);
+                //Log.i("MapSurfaceView", "drawing collision at x=" + drawX + ", y=" + drawY);
+            }
         }
 
         /**
@@ -96,6 +120,44 @@ public class MapSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
 
         // create thread only; it's started in surfaceCreated()
         thread = new MapThread(holder, context);
+
+        collisions = new ArrayList<LocatorData>();
+    }
+
+    public void addCollision(LocatorData location){
+        synchronized(collisions){
+            collisions.add(0, location);
+            float x, y;
+            x = location.getPositionX();
+            y = location.getPositionY();
+            if(xMin == null){
+                xMin = x;
+            }
+            if(xMax == null){
+                xMax = x;
+            }
+            if(yMin == null){
+                yMin = y;
+            }
+            if(yMax == null){
+                yMax = y;
+            }
+
+            if(x < xMin){
+                xMin = x;
+            } else if (x > xMax){
+                xMax = x;
+            }
+
+            if(y < yMin){
+                yMin = y;
+            } else if (y > yMax){
+                yMax = y;
+            }
+
+            xAbsMax = Math.max(xMax, Math.abs(xMin));
+            yAbsMax = Math.max(yMax, Math.abs(yMin));
+        }
     }
 
     @Override
