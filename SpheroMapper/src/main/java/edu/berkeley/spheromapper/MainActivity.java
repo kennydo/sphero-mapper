@@ -13,6 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import orbotix.robot.base.*;
@@ -26,18 +27,26 @@ import orbotix.sphero.SensorListener;
 import orbotix.sphero.Sphero;
 import orbotix.view.connection.SpheroConnectionView;
 
-public class MainActivity extends ActionBarActivity implements ActionBar.OnNavigationListener {
+public class MainActivity extends ActionBarActivity implements ActionBar.OnNavigationListener, CollisionLocationHistoryProvider {
 
     /**
      * The serialization (saved instance state) Bundle key representing the
      * current dropdown position.
      */
     private static final String STATE_SELECTED_NAVIGATION_ITEM = "selected_navigation_item";
+    // the maximum number of collisions we want to remember
+    private static final int MAX_NUM_COLLISION_HISTORY = 100;
+
     private SpheroConnectionView mSpheroConnectionView;
     private Sphero mSphero;
     private SpheroListenerFragment activeFragment;
     private boolean logNextSensorsData = false;
     private CollisionDetectedAsyncData previousCollisionDetectedAsyncData;
+
+    // A list of the locations of where collisions happened.
+    // The newest collision locations are at the front of the list (index 0),
+    // and the oldest collision is at index (MAX_NUM_COLLISION_HISTORY - 1).
+    private List<LocatorData> collisionLocationHistory = new ArrayList<LocatorData>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -225,6 +234,12 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
                         Log.i("MainActivity", "Called fragment's collision callback");
                         activeFragment.onSpheroCollision(previousCollisionDetectedAsyncData, deviceSensorsData);
                         logNextSensorsData = false;
+
+                        collisionLocationHistory.add(0, deviceSensorsData.getLocatorData());
+                        for(int i=collisionLocationHistory.size(); i >= MAX_NUM_COLLISION_HISTORY; i--){
+                            collisionLocationHistory.remove(i);
+                        }
+                        Log.e("MainActivity", collisionLocationHistory.toString());
                     }
                 }
             }
@@ -241,7 +256,10 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
                 }
             }
         });
+    }
 
-
+    @Override
+    public List<LocatorData> getCollisionLocations() {
+        return collisionLocationHistory;
     }
 }

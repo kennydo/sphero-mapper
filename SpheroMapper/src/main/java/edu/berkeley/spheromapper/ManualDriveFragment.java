@@ -1,14 +1,9 @@
 package edu.berkeley.spheromapper;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import android.app.Activity;
 import android.support.v4.app.ListFragment;
-import android.content.DialogInterface;
-import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -16,25 +11,15 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.Adapter;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import orbotix.robot.base.CollisionDetectedAsyncData;
-import orbotix.robot.base.Robot;
 import orbotix.robot.sensor.DeviceSensorsData;
 import orbotix.robot.sensor.LocatorData;
-import orbotix.robot.sensor.LocatorSensor;
-import orbotix.sphero.CollisionListener;
-import orbotix.sphero.SensorListener;
 import orbotix.sphero.Sphero;
-import orbotix.robot.base.RobotProvider;
-import orbotix.sphero.SensorFlag;
 
 
 /**
@@ -44,7 +29,7 @@ public class ManualDriveFragment extends ListFragment implements SpheroListenerF
     private View rootView;
     private Sphero mSphero;
 
-    private int collisionBufferSizeLimit = 7;
+    private final int COLLISION_HISTORY_SIZE = 7;
     private ArrayList<String> collisionLocations;
 
     private ArrayAdapter mAdapter;
@@ -82,6 +67,8 @@ public class ManualDriveFragment extends ListFragment implements SpheroListenerF
                 mAdapter.notifyDataSetChanged();
             }
         });
+
+        populateCollisionHistory(((CollisionLocationHistoryProvider) getActivity()).getCollisionLocations());
 
         return rootView;
     }
@@ -141,7 +128,7 @@ public class ManualDriveFragment extends ListFragment implements SpheroListenerF
         String coordinates = locatorDataToString(locatorData);
         Log.d("ManualDrive", "Collision logged at: " + coordinates);
         collisionLocations.add(0, coordinates); // we want the most recent at the top of the list
-        for(int i=collisionLocations.size() - 1; i > collisionBufferSizeLimit; i--){
+        for(int i=collisionLocations.size() - 1; i > COLLISION_HISTORY_SIZE; i--){
             collisionLocations.remove(i);
         }
         mAdapter.notifyDataSetChanged();
@@ -156,5 +143,15 @@ public class ManualDriveFragment extends ListFragment implements SpheroListenerF
         float y = locatorData.getPositionY();
 
         return "(" + x + ", " + y + ")";
+    }
+
+    public void populateCollisionHistory(List<LocatorData> locations){
+        if(locations != null){
+            collisionLocations.clear();
+            for(int i=0; (i<COLLISION_HISTORY_SIZE) && (i < locations.size()); i++){
+                collisionLocations.add(i, locatorDataToString(locations.get(i)));
+            }
+            mAdapter.notifyDataSetChanged();
+        }
     }
 }
