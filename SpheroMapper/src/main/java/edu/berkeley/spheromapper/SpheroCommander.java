@@ -1,7 +1,12 @@
 package edu.berkeley.spheromapper;
 
 import edu.berkeley.mapping.Commander;
+import edu.berkeley.mapping.MappingEvent;
+import edu.berkeley.mapping.MappingEventType;
+import edu.berkeley.mapping.Runner;
+import orbotix.robot.base.CollisionDetectedAsyncData;
 import orbotix.robot.sensor.LocatorData;
+import orbotix.sphero.CollisionListener;
 import orbotix.sphero.LocatorListener;
 import orbotix.sphero.Sphero;
 
@@ -12,6 +17,7 @@ public class SpheroCommander implements Commander{
 
     private Sphero sphero;
     private static final float SQUARE_LENGTH = 2.0f;
+    private boolean collisionDetected;
 
     private enum DRIVE_TRANSITION_STATE {
         INIT, DRIVE
@@ -19,6 +25,7 @@ public class SpheroCommander implements Commander{
 
     public SpheroCommander(Sphero sphero) {
         this.sphero = sphero;
+        collisionDetected = false;
     }
 
     @Override
@@ -53,6 +60,26 @@ public class SpheroCommander implements Commander{
         return (float) Math.pow(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2), 0.5);
     }
 
+    private void processCollision(LocatorListener listener, float x, float y) {
+        processEvent(listener, x, y, MappingEventType.COLLISION);
+        collisionDetected = false;
+    }
+
+    private void processSquareSuccess(LocatorListener listener, float x, float y) {
+        processEvent(listener, x, y, MappingEventType.SQUARE_COMPLETED);
+    }
+
+    private void processDistanceSuccess(LocatorListener listener, float x, float y) {
+        processEvent(listener, x, y, MappingEventType.DISTANCE_REACHED);
+    }
+
+    private void processEvent(LocatorListener listener, float x, float y, MappingEventType event) {
+        MappingEvent collisionEvent = new MappingEvent(event, x, y);
+        Runner.getMapper().reportEvent(collisionEvent);
+        sphero.stop();
+        sphero.getSensorControl().removeLocatorListener(listener);
+    }
+
     private class DistanceTraveledListener implements LocatorListener {
 
         private float distanceToTravel;
@@ -69,6 +96,10 @@ public class SpheroCommander implements Commander{
         public void onLocatorChanged(LocatorData locatorData) {
             float currX = locatorData.getPositionX();
             float currY = locatorData.getPositionY();
+            if (collisionDetected) {
+                processCollision(this, currX, currY);
+                return;
+            }
             switch (currentState){
                 case INIT:
                     startX = currX;
@@ -77,9 +108,7 @@ public class SpheroCommander implements Commander{
                     break;
                 case DRIVE:
                     if (distanceTraveled(startX, startY, currX, currY) > distanceToTravel) {
-                        //report results
-                        sphero.stop();
-                        sphero.getSensorControl().removeLocatorListener(this);
+                        processDistanceSuccess(this, currX, currY);
                     }
                     break;
             }
@@ -104,6 +133,10 @@ public class SpheroCommander implements Commander{
         public void onLocatorChanged(LocatorData locatorData) {
             float currX = locatorData.getPositionX();
             float currY = locatorData.getPositionY();
+            if (collisionDetected) {
+                processCollision(this, currX, currY);
+                return;
+            }
             switch (currentState){
                 case INIT:
                     startX = currX;
@@ -113,9 +146,7 @@ public class SpheroCommander implements Commander{
                 case DRIVE:
                     if (distanceTraveled(startX, startY, currX, currY) > SQUARE_LENGTH) {
                         if (turnsMade == 2) {
-                            // report results
-                            sphero.stop();
-                            sphero.getSensorControl().removeLocatorListener(this);
+                            processSquareSuccess(this, currX, currY);
                         } else {
                             resetPositionAndTurn(currX, currY);
                             turnsMade++;
@@ -133,6 +164,14 @@ public class SpheroCommander implements Commander{
             } else {
                 sphero.drive(90.0f, 1.0f);
             }
+        }
+    }
+
+    private class CollisionReportListener implements CollisionListener {
+
+        @Override
+        public void collisionDetected(CollisionDetectedAsyncData collisionDetectedAsyncData) {
+            collisionDetected = true;
         }
     }
 }
