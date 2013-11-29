@@ -1,5 +1,7 @@
-package edu.berkeley.mapping;
+package edu.berkeley.spheromapper;
 
+import edu.berkeley.mapping.Commander;
+import edu.berkeley.mapping.Mapper;
 import edu.berkeley.spheromapper.SpheroCommander;
 import orbotix.sphero.Sphero;
 

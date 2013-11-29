@@ -2,7 +2,6 @@ package edu.berkeley.spheromapper;
 
 import edu.berkeley.mapping.Commander;
 import edu.berkeley.mapping.MappingEvent;
-import edu.berkeley.mapping.Runner;
 import orbotix.robot.base.CollisionDetectedAsyncData;
 import orbotix.robot.sensor.LocatorData;
 import orbotix.sphero.CollisionListener;
