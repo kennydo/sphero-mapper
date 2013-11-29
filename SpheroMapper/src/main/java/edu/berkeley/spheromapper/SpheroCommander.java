@@ -2,7 +2,6 @@ package edu.berkeley.spheromapper;
 
 import edu.berkeley.mapping.Commander;
 import edu.berkeley.mapping.MappingEvent;
-import edu.berkeley.mapping.MappingEventType;
 import edu.berkeley.mapping.Runner;
 import orbotix.robot.base.CollisionDetectedAsyncData;
 import orbotix.robot.sensor.LocatorData;
@@ -61,19 +60,19 @@ public class SpheroCommander implements Commander{
     }
 
     private void processCollision(LocatorListener listener, float x, float y) {
-        processEvent(listener, x, y, MappingEventType.COLLISION);
+        processEvent(listener, x, y, MappingEvent.Type.COLLISION);
         collisionDetected = false;
     }
 
     private void processSquareSuccess(LocatorListener listener, float x, float y) {
-        processEvent(listener, x, y, MappingEventType.SQUARE_COMPLETED);
+        processEvent(listener, x, y, MappingEvent.Type.SQUARE_COMPLETED);
     }
 
     private void processDistanceSuccess(LocatorListener listener, float x, float y) {
-        processEvent(listener, x, y, MappingEventType.DISTANCE_REACHED);
+        processEvent(listener, x, y, MappingEvent.Type.DISTANCE_REACHED);
     }
 
-    private void processEvent(LocatorListener listener, float x, float y, MappingEventType event) {
+    private void processEvent(LocatorListener listener, float x, float y, MappingEvent.Type event) {
         MappingEvent collisionEvent = new MappingEvent(event, x, y);
         Runner.getMapper().reportEvent(collisionEvent);
         sphero.stop();
