@@ -15,14 +15,24 @@ package edu.berkeley.mapping;
  *			<li>Changed event type constants to be a enumeration.</li>
  *		</ul>
  *	</li>
+ *	<li>1.12
+ *		<ul>
+ *			<li>Added event type START.</li>
+ *		</ul>
+ *	</li>
  * </ul>
- * @version 1.1
+ * @version 1.12
  */
 public class MappingEvent {
 	/**
 	 * Enumeration listing all possible event types.
 	 */
 	public static enum Type{
+		/**
+		 * This tells the algorithm to begin.
+		 *	- (x,y) is the position the algorithm must consider the robot is at the beginning of the process.
+		 */
+		START,
 		/**
 		 * Defines a collision event.
 		 *	- (x,y) is the position where the collision occurred.
