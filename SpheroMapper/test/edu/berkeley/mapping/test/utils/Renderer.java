@@ -1,13 +1,6 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+package edu.berkeley.mapping.test.utils;
 
-package edu.berkeley.mapping.test;
-
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.CoordinateFilter;
+import com.vividsolutions.jts.geom.Geometry;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.HeadlessException;
@@ -21,16 +14,8 @@ import javax.swing.JPanel;
  * @author Gustavo
  */
 public class Renderer extends JFrame{
-	CoordinateFilter scaleFilter = new CoordinateFilter() {
-
-		@Override
-		public void filter(Coordinate coord) {
-			coord.x *= scale;
-			coord.y *= scale;
-		}
-	};
 	
-	private double scale = 1;
+	private ShapeFactory shapeFactory = new ShapeFactory();
 	
 	private ArrayList<RendererShape> shapes = new ArrayList<>();
 
@@ -48,13 +33,24 @@ public class Renderer extends JFrame{
 		addShape(shape);
 	}
 	
+	public Renderer(Geometry geometry) throws HeadlessException {
+		this();
+		addGeometry(geometry);
+	}
+	
+	
+	
 	public void addShape(Shape shape){
 		shapes.add(new RendererShape(shape));
 		repaint();
 	}
+	
+	public void addGeometry(Geometry geometry){
+		addShape(shapeFactory.fromGeometry(geometry));
+	}
 
-	public void setScale(double scale) {
-		this.scale = scale;
+	public ShapeFactory getShapeFactory() {
+		return shapeFactory;
 	}
 	
 	private class ContentPanel extends JPanel{
@@ -63,6 +59,10 @@ public class Renderer extends JFrame{
 		protected void paintComponent(Graphics g) {
 			Graphics2D g2d = (Graphics2D) g;
 			for (RendererShape rendererShape : shapes) {
+				
+				System.out.println(rendererShape.getShape().getBounds2D().getCenterX());
+				System.out.println(rendererShape.getShape().getBounds2D().getCenterY());
+				
 				g2d.setColor(rendererShape.getStrokeColor());
 				g2d.draw(rendererShape.getShape());
 				
