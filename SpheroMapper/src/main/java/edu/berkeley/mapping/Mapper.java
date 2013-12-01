@@ -1,12 +1,12 @@
 package edu.berkeley.mapping;
 
-import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.operation.buffer.BufferOp;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
+import java.util.ArrayList;
 import java.util.Random;
 
 /**
@@ -51,6 +51,8 @@ public class Mapper {
 	 */
 	private State state = State.IDLE;
 	
+	private ArrayList<StateChangeListener> stateChangeListeners = new ArrayList<StateChangeListener>();
+	
 	/**
 	 * A random number generator to be used temporarily in <code>calculateDriveHeadingVariation</code> method.
 	 * @see #calculateDriveHeadingVariation() 
@@ -73,7 +75,7 @@ public class Mapper {
 	private Geometry freeGeometry = geometryFactory.createMultiPolygon(null);
 	
 	/**
-	 * 
+	 * Last event reported.
 	 */
 	private MappingEvent lastEvent;
 	
@@ -116,7 +118,7 @@ public class Mapper {
 						setState(State.SEARCH_OBSTACLE, event);
 						break;
 					default:
-						throw new RuntimeException("Mapping event not expected.");
+						mappingEventNotExpected(event);
 				}
 				break;
 			case SEARCH_OBSTACLE:
@@ -130,10 +132,12 @@ public class Mapper {
 						break;
 					}
 					case COLLISION:
+						Geometry g = generateDistanceReachedGeometry(event);
+						freeGeometry = freeGeometry.union(g);
 						setState(State.CONTOUR_OBSTACLE, event);
 						break;
 					default:
-						throw new RuntimeException("Mapping event not expected.");
+						mappingEventNotExpected(event);
 				}
 				break;
 			case CONTOUR_OBSTACLE:
@@ -143,7 +147,7 @@ public class Mapper {
 					case COLLISION:
 						break;
 					default:
-						throw new RuntimeException("Mapping event not expected.");
+						mappingEventNotExpected(event);
 				}
 				break;
 		}
@@ -156,6 +160,7 @@ public class Mapper {
 	 */
 	private void setState(State state, MappingEvent event){
 		lastEvent = event;
+		State oldState = this.state;
 		this.state = state;
 		switch(state){
 			case FINISHED:
@@ -164,6 +169,9 @@ public class Mapper {
 			case SEARCH_OBSTACLE:
 				commander.drive(headingVariation, parameters.getCommanderDriveDistance());
 				break;
+		}
+		for (StateChangeListener stateChangeListener : stateChangeListeners) {
+			stateChangeListener.onStateChange(oldState, state, event);
 		}
 	}
 	
@@ -216,5 +224,13 @@ public class Mapper {
 
 	public Geometry getFreeGeometry() {
 		return freeGeometry;
+	}
+	
+	public void addStateChangeListener(StateChangeListener listener){
+		if(!stateChangeListeners.contains(listener)) stateChangeListeners.add(listener);
+	}
+	
+	private static void mappingEventNotExpected(MappingEvent event){
+		System.err.println("Mapping event of type " + event.getType().name() + " not expected. Point: (" + event.getX() + ", " + event.getY() + ").");
 	}
 }
