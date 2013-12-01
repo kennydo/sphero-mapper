@@ -44,9 +44,21 @@ public class SpheroCommander implements Commander{
     }
 
     @Override
+    public void makeLeftSquare(float collisionAngle) {
+        sphero.rotate(collisionAngle);
+        makeLeftSquare();
+    }
+
+    @Override
     public void makeRightSquare() {
         sphero.getSensorControl().addLocatorListener(new SquareTraveledListener(false));
         sphero.drive(180.0f, 1.0f);
+    }
+
+    @Override
+    public void makeRightSquare(float collisionAngle) {
+        sphero.rotate(collisionAngle);
+        makeRightSquare();
     }
 
     @Override

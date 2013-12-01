@@ -35,6 +35,14 @@ public interface Commander {
 	 * @see Mapper
 	 */
 	public void makeLeftSquare();
+
+    /**
+     * Slight variation of makeLeftSquare() where the robot will rotate
+     * to face the collisionAngle parameter before making the left square.
+     * @param collisionAngle The angle where the collision occurred
+     */
+    public void makeLeftSquare(float collisionAngle);
+
 	/**
 	 * Command the robot to make a square by first going backwards, then to its
 	 * right, forwards, and finally to left.
@@ -45,6 +53,14 @@ public interface Commander {
 	 * @see Mapper
 	 */
 	public void makeRightSquare();
+
+    /**
+     * Slight variation of makeLeftSquare() where the robot will rotate
+     * to face the collisionAngle parameter before making the left square.
+     * @param collisionAngle The angle where the collision occurred
+     */
+    public void makeRightSquare(float collisionAngle);
+
 	/**
 	 * Command the robot to stop, which means the end of the algorithm.
 	 */
