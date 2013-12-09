@@ -248,13 +248,15 @@ public class SpheroCommander implements Commander{
         }
 
         private float getDistance(Coordinate currentPoint, Coordinate newPoint) {
-            //TODO: Find the float distance between the two points
-            return 0;
+            double diffX = currentPoint.x - newPoint.x;
+            double diffY = currentPoint.y - newPoint.y;
+            return (float)(Math.pow(diffX, 2) + Math.pow(diffY, 2));
         }
 
         private float getHeading(Coordinate currentPoint, Coordinate newPoint) {
-            //TODO: Find the heading needed to go from the currentPoint to the newPoint
-            return 0;
+            double diffX = currentPoint.x - newPoint.x;
+            double diffY = currentPoint.y - newPoint.y;
+            return (float) (Math.atan(diffY/diffX) * 180 / Math.PI);
         }
     }
 
