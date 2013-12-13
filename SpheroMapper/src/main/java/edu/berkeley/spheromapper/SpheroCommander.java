@@ -186,13 +186,18 @@ public class SpheroCommander implements Commander{
                     currentState = DRIVE_TRANSITION_STATE.DRIVE;
                     break;
                 case DRIVE:
-                    if (distanceTraveled(startX, startY, currX, currY) > SQUARE_LENGTH) {
-                        if (turnsMade == 2) {
-                            processSquareSuccess(this, currX, currY);
-                        } else {
+                    if (turnsMade == 0) {
+                        if (distanceTraveled(startX, startY, currX, currY) > SQUARE_LENGTH / 2) {
                             resetPositionAndTurn(currX, currY);
                             turnsMade++;
                         }
+                    }  else if (turnsMade == 4) {
+                        if (distanceTraveled(startX, startY, currX, currY) > SQUARE_LENGTH / 2) {
+                            processSquareSuccess(this, currX, currY);
+                        }
+                    } else if (distanceTraveled(startX, startY, currX, currY) > SQUARE_LENGTH) {
+                        resetPositionAndTurn(currX, currY);
+                        turnsMade++;
                     }
                     break;
             }
