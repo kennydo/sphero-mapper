@@ -55,7 +55,13 @@ public class MappingEvent {
 		 *	- (x,y) is the robot's position in the moment this event occurred.
 		 *	- angle is the robot's heading.
 		 */
-		SQUARE_COMPLETED
+		SQUARE_COMPLETED,
+        /**
+         * This type of event must be reported when the robot completes traveling
+         * the list of points.
+         *	- (x,y) is the robot's position in the moment this event occurred.
+         */
+        POINTS_COMPLETED
 	}
 	
 	/**
