@@ -99,6 +99,10 @@ public class SpheroCommander implements Commander{
         processEvent(listener, x, y, MappingEvent.Type.DISTANCE_REACHED);
     }
 
+    private void processPointsSuccess(LocatorListener listener, float x, float y) {
+        processEvent(listener, x, y, MappingEvent.Type.POINTS_COMPLETED);
+    }
+
     private void processEvent(LocatorListener listener, float x, float y, MappingEvent.Type event) {
         MappingEvent collisionEvent = new MappingEvent(event, x, y);
         Runner.getMapper().reportEvent(collisionEvent);
@@ -235,7 +239,7 @@ public class SpheroCommander implements Commander{
                     }
                     if (distanceMade) {
                         if (points.isEmpty()) {
-                            //report success
+                            processPointsSuccess(this, currX, currY);
                         } else {
                             Coordinate newPoint = points.remove(0);
                             float heading = getHeading(currentPoint, newPoint);
