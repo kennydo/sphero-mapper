@@ -259,7 +259,7 @@ public class SpheroCommander implements Commander{
         private float getDistance(Coordinate currentPoint, Coordinate newPoint) {
             double diffX = currentPoint.x - newPoint.x;
             double diffY = currentPoint.y - newPoint.y;
-            return (float)(Math.pow(diffX, 2) + Math.pow(diffY, 2));
+            return (float)(Math.pow(Math.pow(diffX, 2) + Math.pow(diffY, 2), 0.5));
         }
 
         private float getHeading(Coordinate currentPoint, Coordinate newPoint) {
