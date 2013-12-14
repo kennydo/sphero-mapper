@@ -68,7 +68,7 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
                         new String[]{
                                 getString(R.string.title_manual_drive),
                                 getString(R.string.title_view_map),
-                                getString(R.string.title_section3),
+                                getString(R.string.title_manual_api),
                         }),
                 this);
         actionBar.hide();
@@ -195,6 +195,8 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
             case 1: // view map
                 fragment = new ViewMapFragment();
                 break;
+            case 2: // manual api
+                fragment = new ManualApiFragment();
             default:
                 fragment = new ManualDriveFragment();
         }

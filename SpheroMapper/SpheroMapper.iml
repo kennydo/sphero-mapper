@@ -74,9 +74,6 @@
     <orderEntry type="library" exported="" name="achievementManager" level="project" />
     <orderEntry type="library" exported="" name="support-v4-19.0.0" level="project" />
     <orderEntry type="library" exported="" name="ComAndroidSupportAppcompatV71900.aar" level="project" />
-    <orderEntry type="library" name="jbox2d-library-2.2.1.1" level="project" />
-    <orderEntry type="library" name="jbox2d-testbed-2.2.1.1" level="project" />
-    <orderEntry type="library" name="jts-1.13" level="project" />
   </component>
 </module>
 
