@@ -126,12 +126,6 @@ public class Simulation extends TestbedTest{
 		}
 
 		@Override
-		public void makeLeftSquare() {}
-
-		@Override
-		public void makeRightSquare() {}
-
-		@Override
 		public void stop() {}
 
 		public float getHeading() {
@@ -141,6 +135,18 @@ public class Simulation extends TestbedTest{
 		public void setHeading(float heading) {
 			this.heading = heading;
 		}
+
+		@Override
+		public void makeLeftSquare() {}
+
+		@Override
+		public void makeLeftSquare(float collisionAngle) {}
+
+		@Override
+		public void makeRightSquare() {}
+
+		@Override
+		public void makeRightSquare(float collisionAngle) {}
 	}
 	
 	private class SimulationContactListener implements ContactListener{

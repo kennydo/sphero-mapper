@@ -42,6 +42,7 @@ public class MapperRenderer extends JFrame{
 		shapeFactory.getCoordinateScaleFilter().setScaleY(-4);
 		setContentPane(new ContentPanel());
 		setBounds(defaultBounds);
+		setLocation(1000, 0);//TEMP
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setVisible(true);
 		mapper.addStateChangeListener(new MapperStateChangeListener());
