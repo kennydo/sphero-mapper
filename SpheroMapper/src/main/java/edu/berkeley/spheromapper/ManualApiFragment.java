@@ -15,6 +15,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.berkeley.mapping.Commander;
 import orbotix.robot.base.CollisionDetectedAsyncData;
 import orbotix.robot.sensor.DeviceSensorsData;
 import orbotix.robot.sensor.LocatorData;
@@ -32,7 +33,7 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
 
     private ArrayAdapter mAdapter;
 
-    private SpheroCommander spheroCommander;
+    private Commander commander;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -54,9 +55,9 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
             @Override
             public void onClick(View view) {
                 Log.d("ManualApi", "Left Square button pressed");
-                if(hasSpheroCommander()){
+                if(hasCommander()){
                     // call the SpheroCommander here
-                    spheroCommander.makeLeftSquare();
+                    commander.makeLeftSquare();
                 }
             }
         });
@@ -64,9 +65,9 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
             @Override
             public void onClick(View view) {
                 Log.d("ManualApi", "Right Square button pressed");
-                if(hasSpheroCommander()){
+                if(hasCommander()){
                     // call the SpheroCommander here
-                    spheroCommander.makeRightSquare();
+                    commander.makeRightSquare();
                 }
             }
         });
@@ -74,9 +75,9 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
             @Override
             public void onClick(View view) {
                 Log.d("ManualApi", "Stop button pressed");
-                if(hasSpheroCommander()){
+                if(hasCommander()){
                     // call the SpheroCommander here
-                    spheroCommander.stop();
+                    commander.stop();
                 }
             }
         });
@@ -93,9 +94,9 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
                 Float distance = Float.valueOf(editDistance.getText().toString());
                 Log.d("ManualApi", "Drive button pressed with heading=" + heading + ", distance=" + distance);
 
-                if(hasSpheroCommander()){
+                if(hasCommander()){
                     // call the SpheroCommander here
-                    spheroCommander.drive(heading, distance);
+                    commander.drive(heading, distance);
                 }
             }
         });
@@ -166,19 +167,19 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
         }
     }
 
-    private boolean hasSpheroCommander(){
-        if(spheroCommander != null){
-            Log.d("ManualApi", "spheroCommander wasn't null, so hasSpheroCommander returning true");
+    private boolean hasCommander(){
+        if(commander != null){
+            Log.d("ManualApi", "commander wasn't null, so hasCommander returning true");
             return true;
         }
         MainActivity mainActivity = (MainActivity) getActivity();
 
-        spheroCommander = mainActivity.getSpheroCommander();
-        if(spheroCommander != null){
-            Log.d("ManualApi", "Successfully got spheroCommander from MainActivity");
+        commander = Runner.getCommander();
+        if(commander != null){
+            Log.d("ManualApi", "Successfully got commander from Runner");
             return true;
         }
-        Log.d("ManualApi", "Failed to get spheroCommander from MainActivity");
+        Log.d("ManualApi", "Failed to get commander from Runner");
         return false;
     }
 }

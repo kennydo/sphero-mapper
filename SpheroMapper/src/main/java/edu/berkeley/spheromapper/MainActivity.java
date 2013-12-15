@@ -48,8 +48,6 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
     // and the oldest collision is at index (MAX_NUM_COLLISION_HISTORY - 1).
     private List<LocatorData> collisionLocationHistory = new ArrayList<LocatorData>();
 
-    private SpheroCommander spheroCommander;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -232,7 +230,8 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
 
         mSphero = (Sphero) sphero;
 
-        spheroCommander = new SpheroCommander(mSphero);
+        Log.d("MainActivity", "initializing Runner");
+        Runner.initialize(mSphero);
 
         mSphero.getSensorControl().setRate(5);
         mSphero.getSensorControl().addSensorListener(new SensorListener() {
@@ -271,6 +270,4 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
     public List<LocatorData> getCollisionLocations() {
         return collisionLocationHistory;
     }
-
-    public SpheroCommander getSpheroCommander() { return spheroCommander; }
 }

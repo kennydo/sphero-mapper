@@ -13,9 +13,8 @@ public class Runner {
     private static Commander commander;
     private static Mapper mapper;
 
-    public void initialize() {
+    public static void initialize(Sphero sphero) {
         //Placeholders before getting the actual objects
-        Sphero sphero = null;
         mapper = null;
 
         commander = new SpheroCommander(sphero);
