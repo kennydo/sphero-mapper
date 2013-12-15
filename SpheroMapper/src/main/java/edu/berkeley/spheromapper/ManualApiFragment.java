@@ -37,7 +37,7 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        rootView = inflater.inflate(R.layout.fragment_manual_drive, container, false);
+        rootView = inflater.inflate(R.layout.fragment_manual_api, container, false);
         if(savedInstanceState != null && savedInstanceState.containsKey("collisionLocations")){
             collisionLocations = savedInstanceState.getStringArrayList("collisionLocations");
         } else {

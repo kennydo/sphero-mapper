@@ -190,14 +190,19 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
         Fragment fragment;
         switch(position){
             case 0: // manual drive
+                Log.d("MainActivity", "Explicitly chose manual drive fragment");
                 fragment = new ManualDriveFragment();
                 break;
             case 1: // view map
+                Log.d("MainActivity", "Explicitly chose view map fragment");
                 fragment = new ViewMapFragment();
                 break;
             case 2: // manual api
+                Log.d("MainActivity", "Explicitly chose manual API fragment");
                 fragment = new ManualApiFragment();
+                break;
             default:
+                Log.d("MainActivity", "By default, went to manual drive fragment");
                 fragment = new ManualDriveFragment();
         }
         ((SpheroListenerFragment) fragment).setSphero(mSphero);
