@@ -32,6 +32,8 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
 
     private ArrayAdapter mAdapter;
 
+    private SpheroCommander spheroCommander;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.fragment_manual_drive, container, false);
@@ -52,27 +54,36 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
             @Override
             public void onClick(View view) {
                 Log.d("ManualApi", "Left Square button pressed");
-                // call the SpheroCommander here
+                if(hasSpheroCommander()){
+                    // call the SpheroCommander here
+                    spheroCommander.makeLeftSquare();
+                }
             }
         });
         rightSquareButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Log.d("ManualApi", "Right Square button pressed");
-                // call the SpheroCommander here
+                if(hasSpheroCommander()){
+                    // call the SpheroCommander here
+                    spheroCommander.makeRightSquare();
+                }
             }
         });
         stopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Log.d("ManualApi", "Stop button pressed");
-                // call the SpheroCommander here
+                if(hasSpheroCommander()){
+                    // call the SpheroCommander here
+                    spheroCommander.stop();
+                }
             }
         });
         driveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Log.d("ManualApi", "Drive button pressed");
+                Log.d("ManualApi", "Drive button pressed, parsing data");
                 // call the SpheroCommander here
 
                 EditText editHeading = (EditText) rootView.findViewById(R.id.edit_heading);
@@ -80,8 +91,12 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
 
                 Float heading = Float.valueOf(editHeading.getText().toString());
                 Float distance = Float.valueOf(editDistance.getText().toString());
+                Log.d("ManualApi", "Drive button pressed with heading=" + heading + ", distance=" + distance);
 
-                // call the SpheroCommander here
+                if(hasSpheroCommander()){
+                    // call the SpheroCommander here
+                    spheroCommander.drive(heading, distance);
+                }
             }
         });
 
@@ -149,5 +164,21 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
             }
             mAdapter.notifyDataSetChanged();
         }
+    }
+
+    private boolean hasSpheroCommander(){
+        if(spheroCommander != null){
+            Log.d("ManualApi", "spheroCommander wasn't null, so hasSpheroCommander returning true");
+            return true;
+        }
+        MainActivity mainActivity = (MainActivity) getActivity();
+
+        spheroCommander = mainActivity.getSpheroCommander();
+        if(spheroCommander != null){
+            Log.d("ManualApi", "Successfully got spheroCommander from MainActivity");
+            return true;
+        }
+        Log.d("ManualApi", "Failed to get spheroCommander from MainActivity");
+        return false;
     }
 }
