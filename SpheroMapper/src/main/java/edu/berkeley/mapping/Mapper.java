@@ -80,7 +80,7 @@ public class Mapper {
 	 */
 	private Geometry freeGeometry = geometryFactory.createMultiPolygon(null);
 	
-	private Geometry perimeterGeometry = geometryFactory.createGeometry(null);
+	private Geometry perimeterGeometry = geometryFactory.createMultiPolygon(null);
 	
 	/**
 	 * Last event reported.
@@ -149,14 +149,21 @@ public class Mapper {
 					case COLLISION:
 						Geometry g = generateDistanceReachedGeometry(event);
 						freeGeometry = freeGeometry.union(g);
-						contourStartPoint.setOrdinate(Coordinate.X, event.getX());
-						contourStartPoint.setOrdinate(Coordinate.Y, event.getY());
-						obstaclePoints.clear();
-						obstaclePoints.add(new Coordinate(
-								event.getX() + Math.cos(event.getAngle()*Math.PI/180f),
-								event.getY() + Math.sin(event.getAngle()*Math.PI/180f)
-						));
-						setState(State.CONTOUR_OBSTACLE, event);
+						if (pointNotVisited(event)) {
+							System.out.println("Point NOT visited.");
+							contourStartPoint.setOrdinate(Coordinate.X, event.getX());
+							contourStartPoint.setOrdinate(Coordinate.Y, event.getY());
+							obstaclePoints.clear();
+							obstaclePoints.add(new Coordinate(
+									event.getX() + Math.cos(event.getAngle()*Math.PI/180f),
+									event.getY() + Math.sin(event.getAngle()*Math.PI/180f)
+							));
+							setState(State.CONTOUR_OBSTACLE, event);
+						} else {
+							System.out.println("Point VISITED.");
+							headingVariation = calculateDriveHeadingVariation(event);
+							setState(State.SEARCH_OBSTACLE, event);
+						}
 						break;
 					default:
 						mappingEventNotExpected(event);
@@ -180,10 +187,11 @@ public class Mapper {
 							Point p = geometryFactory.createPoint(possibleEndPoint);
 							if(p.within(obstacle)){
 								System.out.println("Perimeter!!!");
+								perimeterGeometry = perimeterGeometry.union(obstacle);
 							}else{
 								objectsGeometry = objectsGeometry.union(obstacle);
 							}
-							headingVariation = calculateDriveHeadingVariation();
+							headingVariation = calculateDriveHeadingVariation(event);
 							setState(State.SEARCH_OBSTACLE, event);
 						}else{
 							setState(State.CONTOUR_OBSTACLE, event);
@@ -227,8 +235,44 @@ public class Mapper {
 	 * @see Commander#drive(float) 
 	 * @see Commander#drive(float, float) 
 	 */
-	private float calculateDriveHeadingVariation(){
+	private float calculateDriveHeadingVariation(MappingEvent event){
+		/*float maxHeading = 0;
+		double maxArea = 0;
+		for (float i = 0; i < 359; i++) {
+			Coordinate dest = new Coordinate(
+				event.getX() + Math.cos(i*Math.PI/180f) * parameters.getCommanderDriveDistance(),
+				event.getY() + Math.sin(i*Math.PI/180f) * parameters.getCommanderDriveDistance()
+			);
+			Coordinate origin = new Coordinate(
+				event.getX(),
+				event.getY()
+			);
+			LineSegment lineSegment = new LineSegment(origin, dest);
+			LineString lineString = lineSegment.toGeometry(geometryFactory);
+			BufferParameters bufferParameters = new BufferParameters();
+			bufferParameters.setEndCapStyle(BufferParameters.CAP_FLAT);
+			BufferOp bufferOp = new BufferOp(lineString, bufferParameters);
+			Geometry g = bufferOp.getResultGeometry(parameters.getRunnerWidth());
+			if (!perimeterGeometry.isEmpty()){
+				g = g.intersection(perimeterGeometry);
+			}
+			g = g.difference(freeGeometry);
+			double area = g.getArea();
+			if (area > maxArea) {
+				maxArea = area;
+				maxHeading = i;
+			}
+		}
+		System.out.println("maxArea = " + maxArea);
+		System.out.println("maxHeading = " + maxHeading);
+		return maxHeading;*/
 		return 90 + random.nextFloat()*180;
+	}
+	
+	private boolean pointNotVisited(MappingEvent event) {
+		Coordinate coordinate = new Coordinate(event.getX(), event.getY());
+		Point p = geometryFactory.createPoint(coordinate);
+		return !p.within(freeGeometry);
 	}
 	
 	/**
