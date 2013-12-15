@@ -96,6 +96,7 @@ public class Simulation extends TestbedTest{
 		runnerBody.createFixture(runnerShape, 5.0f);
 		
 		mapper.getParameters().setRunnerWidth(runnerShape.getRadius()*2);
+		mapper.getParameters().setContourFinishPointRadiusThreshold((float) (Runner.SQUARE_EDGE * 0.9));
 		mapper.getParameters().setCommanderDriveDistance(4);
 		mapper.reportEvent(new MappingEvent(MappingEvent.Type.START, runnerBody.getPosition().x, runnerBody.getPosition().y));
 		
@@ -107,8 +108,38 @@ public class Simulation extends TestbedTest{
 		return "Mapping simulation.";
 	}
 	
+	private static enum RunnerState{
+		/**
+		 * When the runner drives backward by half the square edge.
+		 */
+		SQUARE_FASE1,
+		/**
+		 * When the runner drives to the square side (left or right) until it reaches the edge length.
+		 */
+		SQUARE_FASE2,
+		/**
+		 * When the runner drives forward until it reaches the edge length.
+		 */
+		SQUARE_FASE3,
+		/**
+		 * When the runner drives to the opposite direction of the square side (left or right) until it reaches the edge length.
+		 */
+		SQUARE_FASE4,
+		/**
+		 * When the runner drives backward by half the square edge to complete the square.
+		 */
+		SQUARE_FASE5
+	}
+	
 	private class Runner implements Commander{
 		private float heading = 0;
+		private static final float SQUARE_EDGE = 1;
+		/**
+		 * Tells which direction is the current square run.
+		 */
+		private boolean isRightSquare = false;
+		
+		private RunnerState state;
 
 		@Override
 		public void drive(float headingVariation, float distance) {
@@ -119,34 +150,98 @@ public class Simulation extends TestbedTest{
 		@Override
 		public void drive(float headingVariation) {
 			System.out.println("Runner: drive(headingVariation="+headingVariation+")");
-			heading = (heading + headingVariation)%360;
-			if(heading < 0) heading = 360+heading;
+			setHeading(heading + headingVariation);
 			double rad = (heading/180f)*Math.PI;
 			runnerBody.setLinearVelocity(new Vec2((float) Math.cos(rad)*5f, (float) Math.sin(rad)*5f));
 		}
+		
+		/**
+		 * It's like the drive command, but set the distance observer to report the event to the runner instead of the mapper.
+		 * @param headingVariation
+		 * @param distance 
+		 * @see #drive(float, float) 
+		 */
+		private void driveForSquare(float headingVariation, float distance){
+			distanceObserver.observe(runnerBody.getPosition().x, runnerBody.getPosition().y, distance, EventTarget.RUNNER);
+			drive(headingVariation);
+		}
 
 		@Override
-		public void stop() {}
+		public void stop() {
+			runnerBody.setLinearVelocity(new Vec2(0, 0));
+		}
 
 		public float getHeading() {
 			return heading;
 		}
 
 		public void setHeading(float heading) {
+			heading = heading%360;
+			if(heading < 0) heading = 360+heading;
 			this.heading = heading;
 		}
 
 		@Override
-		public void makeLeftSquare() {}
+		public void makeLeftSquare() {
+			isRightSquare = false;
+			makeSquare();
+		}
 
 		@Override
-		public void makeLeftSquare(float collisionAngle) {}
+		public void makeLeftSquare(float collisionAngle) {
+			System.out.println("Runner: makeLeftSquare(collisionAngle=" + collisionAngle + ")");
+			setHeading(collisionAngle);
+			makeLeftSquare();
+		}
 
 		@Override
-		public void makeRightSquare() {}
+		public void makeRightSquare() {
+			isRightSquare = true;
+			makeSquare();
+		}
 
 		@Override
-		public void makeRightSquare(float collisionAngle) {}
+		public void makeRightSquare(float collisionAngle) {
+			System.out.println("Runner: makeRightSquare(collisionAngle=" + collisionAngle + ")");
+			setHeading(collisionAngle);
+			makeRightSquare();
+		}
+		
+		private void makeSquare(){
+			state = RunnerState.SQUARE_FASE1;
+			driveForSquare(-180, SQUARE_EDGE/2);
+		}
+		
+		public void onDistanceReached(){
+			switch(state){
+				case SQUARE_FASE1:
+					state = RunnerState.SQUARE_FASE2;
+					driveForSquare(isRightSquare ? 90 : -90, SQUARE_EDGE);
+					break;
+				case SQUARE_FASE2:
+					state = RunnerState.SQUARE_FASE3;
+					driveForSquare(isRightSquare ? 90 : -90, SQUARE_EDGE);
+					break;
+				case SQUARE_FASE3:
+					state = RunnerState.SQUARE_FASE4;
+					driveForSquare(isRightSquare ? 90 : -90, SQUARE_EDGE);
+					break;
+				case SQUARE_FASE4:
+					state = RunnerState.SQUARE_FASE5;
+					driveForSquare(isRightSquare ? 90 : -90, SQUARE_EDGE/2);
+					break;
+				case SQUARE_FASE5:
+					mapper.reportEvent(
+						new MappingEvent(
+							MappingEvent.Type.SQUARE_COMPLETED,
+							runnerBody.getPosition().x,
+							runnerBody.getPosition().y,
+							heading
+						)
+					);
+					break;
+			}
+		}
 	}
 	
 	private class SimulationContactListener implements ContactListener{
@@ -165,7 +260,12 @@ public class Simulation extends TestbedTest{
 				runnerBody.setAngularVelocity(0);
 
 				//TODO confirm angle orientation
-				double angle = 180f*Math.atan2(directionVector.y, directionVector.x)/Math.PI;
+				double angle = Math.atan2(directionVector.y, directionVector.x);
+				angle = 180f*angle/Math.PI;
+				if(angle < 360) angle += 360;
+				System.out.println("Angle: " + angle);
+				System.out.println("Heading: " + runner.getHeading());
+				
 				mapper.reportEvent(new MappingEvent(MappingEvent.Type.COLLISION, runnerBody.getPosition().x, runnerBody.getPosition().y, (float) angle));
 			}
 		}
@@ -180,16 +280,24 @@ public class Simulation extends TestbedTest{
 		public void postSolve(Contact contact, ContactImpulse impulse) {}
 	}
 	
+	/**
+	 * The target to report the events.
+	 */
+	private static enum EventTarget{
+		RUNNER,
+		MAPPER
+	}
+	
 	private class DistanceObserver extends Thread{
 		
 		private final Coordinate initialPoint = new Coordinate();
 		private final Coordinate currentPoint = new Coordinate();
-		private double distance;
-		
-		private boolean cancel = false;
-		
 		private final Semaphore startSemaphore = new Semaphore(0);
-
+		
+		private double distance;
+		private boolean cancel = false;
+		private EventTarget eventTarget = EventTarget.MAPPER;
+		
 		@Override
 		public void  run() {
 			synchronized(startSemaphore){
@@ -210,14 +318,21 @@ public class Simulation extends TestbedTest{
 					currentPoint.x = runnerBody.getPosition().x;
 					currentPoint.y = runnerBody.getPosition().y;
 					if(currentPoint.distance(initialPoint) >= distance){
-						mapper.reportEvent(
-							new MappingEvent(
-								MappingEvent.Type.DISTANCE_REACHED,
-								(float) currentPoint.x,
-								(float) currentPoint.y,
-								runner.getHeading()
-							)
-						);
+						switch(this.eventTarget){
+							case MAPPER:
+								mapper.reportEvent(
+									new MappingEvent(
+										MappingEvent.Type.DISTANCE_REACHED,
+										(float) currentPoint.x,
+										(float) currentPoint.y,
+										runner.getHeading()
+									)
+								);
+								break;
+							case RUNNER:
+								runner.onDistanceReached();
+								break;
+						}
 						
 						synchronized(startSemaphore){
 							startSemaphore.acquire();
@@ -230,11 +345,29 @@ public class Simulation extends TestbedTest{
 			}
 		}
 		
+		/**
+		 * 
+		 * @param x0
+		 * @param y0
+		 * @param distance 
+		 */
 		public void observe(double x0, double y0, double distance){
+			observe(x0, y0, distance, EventTarget.MAPPER);
+		}
+		
+		/**
+		 * 
+		 * @param x0
+		 * @param y0
+		 * @param distance
+		 * @param eventTarget 
+		 */
+		public void observe(double x0, double y0, double distance, EventTarget eventTarget){
+			this.eventTarget = eventTarget;
 			initialPoint.x = x0;
 			initialPoint.y = y0;
 			this.distance = distance;
-			startSemaphore.release();
+			startSemaphore.release();	
 		}
 		
 		public void cancel(){

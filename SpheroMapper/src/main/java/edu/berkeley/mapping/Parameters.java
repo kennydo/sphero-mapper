@@ -14,7 +14,9 @@ public class Parameters {
 	 * The robot's width, which is used by the mapper to determine the area covered by the runner (e.g. the robot).
 	 */
 	private float runnerWidth = 4;
-
+	
+	private float contourFinishPointRadiusThreshold = 8;
+	
 	/**
 	 * @return The distance for the algorithm to set for commander drive function.
 	 * @see Commander#drive(float, float) 
@@ -44,5 +46,21 @@ public class Parameters {
 	 */
 	public void setRunnerWidth(float runnerWidth) {
 		this.runnerWidth = runnerWidth;
+	}
+
+	/**
+	 * 
+	 * @return 
+	 */
+	public float getContourFinishPointRadiusThreshold() {
+		return contourFinishPointRadiusThreshold;
+	}
+
+	/**
+	 * 
+	 * @param contourFinishPointRadiusThreshold 
+	 */
+	public void setContourFinishPointRadiusThreshold(float contourFinishPointRadiusThreshold) {
+		this.contourFinishPointRadiusThreshold = contourFinishPointRadiusThreshold;
 	}
 }
