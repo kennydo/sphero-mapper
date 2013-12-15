@@ -1,9 +1,12 @@
 package edu.berkeley.mapping;
 
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.operation.buffer.BufferOp;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
 import java.util.ArrayList;
@@ -51,6 +54,9 @@ public class Mapper {
 	 */
 	private State state = State.IDLE;
 	
+	/**
+	 * List of listeners to be triggered every time a state is set.
+	 */
 	private ArrayList<StateChangeListener> stateChangeListeners = new ArrayList<StateChangeListener>();
 	
 	/**
@@ -74,10 +80,19 @@ public class Mapper {
 	 */
 	private Geometry freeGeometry = geometryFactory.createMultiPolygon(null);
 	
+	private Geometry perimeterGeometry = geometryFactory.createGeometry(null);
+	
 	/**
 	 * Last event reported.
 	 */
 	private MappingEvent lastEvent;
+	
+	/**
+	 * The start point of the contour process
+	 */
+	private final Coordinate contourStartPoint = new Coordinate();
+	
+	private final ArrayList<Coordinate> obstaclePoints = new ArrayList<>();
 	
 	/**
 	 * The heading variation to be set if the state needs to use the drive command.
@@ -134,6 +149,13 @@ public class Mapper {
 					case COLLISION:
 						Geometry g = generateDistanceReachedGeometry(event);
 						freeGeometry = freeGeometry.union(g);
+						contourStartPoint.setOrdinate(Coordinate.X, event.getX());
+						contourStartPoint.setOrdinate(Coordinate.Y, event.getY());
+						obstaclePoints.clear();
+						obstaclePoints.add(new Coordinate(
+								event.getX() + Math.cos(event.getAngle()*Math.PI/180f),
+								event.getY() + Math.sin(event.getAngle()*Math.PI/180f)
+						));
 						setState(State.CONTOUR_OBSTACLE, event);
 						break;
 					default:
@@ -145,6 +167,27 @@ public class Mapper {
 					case SQUARE_COMPLETED:
 						break;
 					case COLLISION:
+						Geometry g = generateDistanceReachedGeometry(event);
+						freeGeometry = freeGeometry.union(g);
+						Coordinate possibleEndPoint = new Coordinate(event.getX(), event.getY());
+						obstaclePoints.add(new Coordinate(
+							event.getX() + Math.cos(event.getAngle()*Math.PI/180f),
+							event.getY() + Math.sin(event.getAngle()*Math.PI/180f)
+						));
+						if(possibleEndPoint.distance(contourStartPoint) <= parameters.getContourFinishPointRadiusThreshold()){
+							obstaclePoints.add(obstaclePoints.get(0));
+							Polygon obstacle = geometryFactory.createPolygon(obstaclePoints.toArray(new Coordinate[obstaclePoints.size()]));
+							Point p = geometryFactory.createPoint(possibleEndPoint);
+							if(p.within(obstacle)){
+								System.out.println("Perimeter!!!");
+							}else{
+								objectsGeometry = objectsGeometry.union(obstacle);
+							}
+							headingVariation = calculateDriveHeadingVariation();
+							setState(State.SEARCH_OBSTACLE, event);
+						}else{
+							setState(State.CONTOUR_OBSTACLE, event);
+						}
 						break;
 					default:
 						mappingEventNotExpected(event);
@@ -169,6 +212,9 @@ public class Mapper {
 			case SEARCH_OBSTACLE:
 				commander.drive(headingVariation, parameters.getCommanderDriveDistance());
 				break;
+			case CONTOUR_OBSTACLE:
+				commander.makeRightSquare(event.getAngle());
+				break;
 		}
 		for (StateChangeListener stateChangeListener : stateChangeListeners) {
 			stateChangeListener.onStateChange(oldState, state, event);
@@ -182,7 +228,7 @@ public class Mapper {
 	 * @see Commander#drive(float, float) 
 	 */
 	private float calculateDriveHeadingVariation(){
-		return random.nextFloat()*360;
+		return 90 + random.nextFloat()*180;
 	}
 	
 	/**
