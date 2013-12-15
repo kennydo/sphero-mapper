@@ -92,7 +92,7 @@ public class Mapper {
 	 */
 	private final Coordinate contourStartPoint = new Coordinate();
 	
-	private final ArrayList<Coordinate> obstaclePoints = new ArrayList<>();
+	private final ArrayList<Coordinate> obstaclePoints = new ArrayList<Coordinate>();
 	
 	/**
 	 * The heading variation to be set if the state needs to use the drive command.
