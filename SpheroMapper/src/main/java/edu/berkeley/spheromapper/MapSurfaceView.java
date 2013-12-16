@@ -4,12 +4,17 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +76,7 @@ public class MapSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
 
         private void doDraw(Canvas c){
             c.drawColor(Color.DKGRAY);
-
+/*
             float centerX = getWidth() / 2;
             float centerY = getHeight() / 2;
             //Log.i("MapSurfaceView", "centerX=" + centerX + ", centerY=" + centerY);
@@ -90,6 +95,72 @@ public class MapSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
 
                 c.drawCircle(drawX, drawY, 10, collisionPaint);
                 //Log.i("MapSurfaceView", "drawing collision at x=" + drawX + ", y=" + drawY);
+            }
+          */
+
+            Geometry freeGeometry = Runner.getMapper().getFreeGeometry();
+            Envelope freeEnvelope = freeGeometry.getEnvelopeInternal();
+            Coordinate freeCenter = freeEnvelope.centre();
+
+            CoordinateConverter converter = new CoordinateConverter(freeEnvelope);
+
+            for(int i = freeGeometry.getNumGeometries() - 1; i > 0; i++){
+                Geometry geometry = freeGeometry.getGeometryN(i);
+
+                Coordinate[] coordinates = geometry.getCoordinates();
+                if(coordinates.length > 1){
+                    Coordinate coordinate = coordinates[0];
+                    Path path = new Path();
+                    path.moveTo((float) converter.convertX(coordinate.x),
+                            (float) converter.convertY(coordinate.y));
+                    for(int j=1; j< coordinates.length; j++){
+                        coordinate = coordinates[j];
+                        path.lineTo((float) converter.convertX(coordinate.x),
+                                (float) converter.convertY(coordinate.y));
+                    }
+                    coordinate = coordinates[0];
+                    path.moveTo((float) converter.convertX(coordinate.x),
+                            (float) converter.convertY(coordinate.y));
+                }
+            }
+
+
+        }
+
+        private class CoordinateConverter {
+            private double canvasWidth, canvasHeight;
+            private double pointCenterX, pointCenterY;
+            private double minX, maxX, minY, maxY;
+            private double sizeX, sizeY;
+
+            public CoordinateConverter(Envelope envelope){
+                this(envelope.getMinX(),
+                        envelope.getMaxX(),
+                        envelope.getMinY(),
+                        envelope.getMaxY());
+            }
+
+            public CoordinateConverter(double minX, double maxX, double minY, double maxY){
+                canvasWidth = getWidth();
+                canvasHeight = getHeight();
+
+                this.minX = minX;
+                this.maxY = maxX;
+                this.minY = minY;
+                this.maxY = maxY;
+
+                pointCenterX = (minX + maxX) * 0.5;
+                pointCenterY = (minY + maxY) * 0.5;
+
+                sizeX = Math.abs(maxX - minX);
+                sizeY = Math.abs(maxY - minY);
+            }
+
+            public double convertX(double x){
+                return ((x - pointCenterX) / sizeX) * canvasWidth;
+            }
+            public double convertY(double y){
+                return ((y - pointCenterY) / sizeY) * canvasHeight;
             }
         }
 
