@@ -182,7 +182,7 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
     public boolean onNavigationItemSelected(int position, long id) {
         // When the given dropdown item is selected, show its contents in the
         // container view.
-        if(mSpheroConnectionView.getVisibility() != View.INVISIBLE){
+        if(mSpheroConnectionView != null && mSpheroConnectionView.getVisibility() != View.INVISIBLE){
             Log.e("MainActivity", "Tried to call onNavigationItemSelected when mSpheroConnectionView is not invisible");
             return false;
         }
