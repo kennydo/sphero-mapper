@@ -15,6 +15,8 @@ import android.view.SurfaceView;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.io.ParseException;
+import com.vividsolutions.jts.io.WKTReader;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,41 +78,36 @@ public class MapSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
 
         private void doDraw(Canvas c){
             c.drawColor(Color.DKGRAY);
-/*
-            float centerX = getWidth() / 2;
-            float centerY = getHeight() / 2;
-            //Log.i("MapSurfaceView", "centerX=" + centerX + ", centerY=" + centerY);
-            //Log.i("MapSurfaceView", collisions.toString());
-
-            float x, y;
-            float drawX, drawY;
-            float xDiff = xMax - xMin;
-            float yDiff = yMax - yMin;
-            for(LocatorData location : collisions){
-                x = location.getPositionX();
-                y = location.getPositionY();
-
-                drawX = centerX + ((x - xDiff) * (centerX / xAbsMax));
-                drawY = centerY + ((y - yDiff) * (centerY / yAbsMax));
-
-                c.drawCircle(drawX, drawY, 10, collisionPaint);
-                //Log.i("MapSurfaceView", "drawing collision at x=" + drawX + ", y=" + drawY);
-            }
-          */
 
             Geometry freeGeometry = Runner.getMapper().getFreeGeometry();
+/*
+            String wkt = "MULTIPOLYGON (((-120 180, 152 180, 152 165, -120 165, -120 180)), \n" +
+                    "  ((-130 190, -110 190, -110 -120, -130 -120, -130 190)), \n" +
+                    "  ((-140 -110, 170 -110, 170 -130, -140 -130, -140 -110)), \n" +
+                    "  ((176 -155, 140 -155, 140 200, 176 200, 176 -155)))";
+            WKTReader wKTReader = new WKTReader();
+            try{
+                freeGeometry = wKTReader.read(wkt);
+            } catch (ParseException e){
+                Log.d("MapSurfaceView", "parsing error");
+                return;
+            }
+            */
+
             Envelope freeEnvelope = freeGeometry.getEnvelopeInternal();
             Coordinate freeCenter = freeEnvelope.centre();
 
             CoordinateConverter converter = new CoordinateConverter(freeEnvelope);
 
-            for(int i = freeGeometry.getNumGeometries() - 1; i > 0; i++){
+            for(int i = freeGeometry.getNumGeometries() - 1; i >= 0; i--){
                 Geometry geometry = freeGeometry.getGeometryN(i);
 
                 Coordinate[] coordinates = geometry.getCoordinates();
                 if(coordinates.length > 1){
                     Coordinate coordinate = coordinates[0];
                     Path path = new Path();
+                    float x, y;
+
                     path.moveTo((float) converter.convertX(coordinate.x),
                             (float) converter.convertY(coordinate.y));
                     for(int j=1; j< coordinates.length; j++){
@@ -121,6 +118,11 @@ public class MapSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
                     coordinate = coordinates[0];
                     path.moveTo((float) converter.convertX(coordinate.x),
                             (float) converter.convertY(coordinate.y));
+
+                    Paint paint = new Paint();
+                    paint.setColor(Color.YELLOW);
+                    paint.setStyle(Paint.Style.FILL);
+                    c.drawPath(path, paint);
                 }
             }
 
@@ -152,15 +154,23 @@ public class MapSurfaceView extends SurfaceView implements SurfaceHolder.Callbac
                 pointCenterX = (minX + maxX) * 0.5;
                 pointCenterY = (minY + maxY) * 0.5;
 
-                sizeX = Math.abs(maxX - minX);
-                sizeY = Math.abs(maxY - minY);
+                //Log.d("CoordinateConverter", "Center of envelope is (" + pointCenterX + ", " + pointCenterY + ")");
+
+                sizeX = Math.abs(maxX - minX) * 1.1;
+                sizeY = Math.abs(maxY - minY) * 1.1;
+
+                //Log.d("CoordinateConverter", "Size is " + sizeX + ", " + sizeY);
             }
 
             public double convertX(double x){
-                return ((x - pointCenterX) / sizeX) * canvasWidth;
+                double newX = ((x - pointCenterX) / sizeX) * canvasWidth + (canvasWidth / 2);
+                //Log.d("CoordinateConverter", "Converted x=" + x + " to " + newX);
+                return newX;
             }
             public double convertY(double y){
-                return ((y - pointCenterY) / sizeY) * canvasHeight;
+                double newY = ((y - pointCenterY) / sizeY) * canvasHeight + (canvasHeight / 2);
+                //Log.d("CoordinateConverter", "Converted y=" + y + " to " + newY);
+                return newY;
             }
         }
 
