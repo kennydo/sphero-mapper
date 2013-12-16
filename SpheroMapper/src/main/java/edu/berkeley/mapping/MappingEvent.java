@@ -58,6 +58,12 @@ public class MappingEvent {
 		SQUARE_COMPLETED,
         /**
          * This type of event must be reported when the robot completes traveling
+         * to an internmediate point within the list of points.
+         *	- (x,y) is the robot's position in the moment this event occurred.
+         */
+        POINT_REACHED,
+        /**
+         * This type of event must be reported when the robot completes traveling
          * the list of points.
          *	- (x,y) is the robot's position in the moment this event occurred.
          */
