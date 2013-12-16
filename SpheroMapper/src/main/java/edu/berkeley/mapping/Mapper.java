@@ -1,14 +1,20 @@
 package edu.berkeley.mapping;
 
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.CoordinateSequence;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.MultiPoint;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import com.vividsolutions.jts.operation.buffer.BufferOp;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
+import com.vividsolutions.jts.shape.random.RandomPointsBuilder;
+import com.vividsolutions.jtstest.function.CreateRandomShapeFunctions;
+import com.vividsolutions.jtstest.function.CreateShapeFunctions;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -33,6 +39,10 @@ public class Mapper {
 		 * The state of the mapping algorithm in which the robot must try to contour the obstacle that was found.
 		 */
 		CONTOUR_OBSTACLE,
+		/**
+		 * The state when the mapping is following a path to get to an undiscovered area.
+		 */
+		FOLLOW_PATH,
 		/**
 		 * The state when the mapping is finished.
 		 */
@@ -71,6 +81,11 @@ public class Mapper {
 	private GeometryFactory geometryFactory = new GeometryFactory();
 	
 	/**
+	 * A random points builder
+	 */
+	private RandomPointsBuilder randomPointsBuilder = new RandomPointsBuilder(geometryFactory);
+	
+	/**
 	 * The geometry object to represent the objects on the ground.
 	 */
 	private Geometry objectsGeometry = geometryFactory.createMultiPolygon(null);
@@ -101,6 +116,8 @@ public class Mapper {
 	private float headingVariation;
 	
 
+	private ArrayList<Coordinate> pathPoints = new ArrayList<Coordinate>();
+	
 	/**
 	 * 
 	 * @param commander The commander object for the mapper.
@@ -161,8 +178,13 @@ public class Mapper {
 							setState(State.CONTOUR_OBSTACLE, event);
 						} else {
 							System.out.println("Point VISITED.");
-							headingVariation = calculateDriveHeadingVariation(event);
-							setState(State.SEARCH_OBSTACLE, event);
+							if (perimeterGeometry.isEmpty()) {
+								headingVariation = calculateDriveHeadingVariation(event);
+								setState(State.SEARCH_OBSTACLE, event);
+							} else {
+								pathPoints = calculatePathPoints(event);
+								setState(State.FOLLOW_PATH, event);
+							}
 						}
 						break;
 					default:
@@ -191,8 +213,13 @@ public class Mapper {
 							}else{
 								objectsGeometry = objectsGeometry.union(obstacle);
 							}
-							headingVariation = calculateDriveHeadingVariation(event);
-							setState(State.SEARCH_OBSTACLE, event);
+							if (perimeterGeometry.isEmpty()) {
+								headingVariation = calculateDriveHeadingVariation(event);
+								setState(State.SEARCH_OBSTACLE, event);
+							} else {
+								pathPoints = calculatePathPoints(event);
+								setState(State.FOLLOW_PATH, event);
+							}
 						}else{
 							setState(State.CONTOUR_OBSTACLE, event);
 						}
@@ -222,6 +249,9 @@ public class Mapper {
 				break;
 			case CONTOUR_OBSTACLE:
 				commander.makeRightSquare(event.getAngle());
+				break;
+			case FOLLOW_PATH:
+				commander.drive(pathPoints);
 				break;
 		}
 		for (StateChangeListener stateChangeListener : stateChangeListeners) {
@@ -267,6 +297,142 @@ public class Mapper {
 		System.out.println("maxHeading = " + maxHeading);
 		return maxHeading;*/
 		return 90 + random.nextFloat()*180;
+	}
+	
+	private Coordinate calculateDestination() {
+		Geometry undiscoveredArea = perimeterGeometry.difference(freeGeometry);
+		undiscoveredArea = undiscoveredArea.difference(objectsGeometry);
+		randomPointsBuilder.setNumPoints(1);
+		randomPointsBuilder.setExtent(undiscoveredArea);
+		MultiPoint points = (MultiPoint) randomPointsBuilder.getGeometry();
+		Point point = (Point) points.getGeometryN(0);
+		Coordinate coordinate = point.getCoordinate();
+		return coordinate;
+	}
+	
+	private ArrayList<Coordinate> generateRandomPoints(int n) {
+		randomPointsBuilder.setNumPoints(n);
+		randomPointsBuilder.setExtent(perimeterGeometry);
+		MultiPoint points = (MultiPoint) randomPointsBuilder.getGeometry();
+		ArrayList<Coordinate> arrayOfCoord = new ArrayList<Coordinate>();
+		for (int i = 0; i < points.getNumGeometries(); i++) {
+			Point p = (Point) points.getGeometryN(i);
+			arrayOfCoord.add(p.getCoordinate());
+		}
+		return arrayOfCoord;
+	}
+	
+	private Coordinate selectVertice(ArrayList<Coordinate> Q, ArrayList<Coordinate[]> E,
+			ArrayList<Coordinate> R, double[] dist, boolean[] visited) {
+		
+		double leastDistance = 1000000;
+		Coordinate leastElement = null;
+		for (int i = 0; i < Q.size(); i++) {
+			Coordinate v = Q.get(i);
+			int vIndex = R.indexOf(v);
+			if (dist[vIndex] < leastDistance && !visited[vIndex]) {
+				leastDistance = dist[vIndex];
+				leastElement = v;
+			}
+		}
+		return leastElement;
+	}
+	
+	private ArrayList<Coordinate> getNeighbors(Coordinate u, ArrayList<Coordinate[]> R) {
+		ArrayList<Coordinate> neighbors = new ArrayList<Coordinate>();
+		for (int i = 0; i < R.size(); i++) {
+			Coordinate[] tuple = R.get(i);
+			if (tuple[0].equals(u)) {
+				if (!neighbors.contains(u)) {
+					neighbors.add(u);
+				}
+			}
+		}
+		return neighbors;
+	}
+	
+	private double distance(Coordinate u, Coordinate v) {
+		return u.distance(v);
+	}
+	
+	private ArrayList<Coordinate> makePath(Coordinate origin, Coordinate destination) {
+		ArrayList<Coordinate> randomPoints = generateRandomPoints(10);
+		randomPoints.add(origin);
+		randomPoints.add(destination);
+		ArrayList<Coordinate[]> edges = new ArrayList<Coordinate[]>();
+		for (int i = 0; i < randomPoints.size(); i++) {
+			for (int j = 0; j < randomPoints.size(); j++) {
+				Coordinate[] coordinates = {randomPoints.get(i), randomPoints.get(j)};
+				CoordinateSequence coords = new CoordinateArraySequence(coordinates);
+				LineString line = new LineString(coords, geometryFactory);
+				if (!line.intersects(objectsGeometry)) {
+					edges.add(coordinates);
+				}
+			}
+		}
+		double[] dist = new double[randomPoints.size()];
+		boolean[] visited = new boolean[randomPoints.size()];
+		int[] previous = new int[randomPoints.size()];
+		for (int i = 0; i < randomPoints.size(); i++) {
+			dist[i] = 1000000;
+			visited[i] = false;
+			previous[i] = -1;
+		}
+		dist[10] = 0;
+		ArrayList<Coordinate> Q = new ArrayList<Coordinate>();
+		Q.add(origin);
+		
+		while (!Q.isEmpty()) {
+			Coordinate u = selectVertice(Q, edges, randomPoints, dist, visited);
+			int uIndex = randomPoints.indexOf(u);
+			if (u.equals(destination)) {
+				break;
+			}
+			Q.remove(u);
+			visited[uIndex] = true;
+			ArrayList<Coordinate> neighbors = getNeighbors(u, edges);
+			for (int i = 0; i < neighbors.size(); i++) {
+				Coordinate v = neighbors.get(i);
+				int vIndex = randomPoints.indexOf(v);
+				double alt = dist[vIndex] + distance(u, v);
+				if (alt < dist[vIndex]) {
+					dist[vIndex] = alt;
+					previous[vIndex] = uIndex;
+					if (!visited[vIndex]) {
+						Q.add(randomPoints.get(vIndex));
+					}
+				}
+				
+			}
+		}
+		
+		ArrayList<Coordinate> path = new ArrayList<Coordinate>();
+		Coordinate u = destination;
+		int uIndex = randomPoints.indexOf(u);
+		while (previous[uIndex] != -1) {
+			path.add(0,u);
+			u = randomPoints.get(previous[uIndex]);
+			uIndex = randomPoints.indexOf(u);
+		}
+		path.add(0, u);
+		
+		return path;
+	}
+	
+	private ArrayList<Coordinate> calculatePathPoints(MappingEvent event) {
+		Coordinate origin = new Coordinate(event.getX(), event.getY());
+		Coordinate destination = calculateDestination();
+		Coordinate[] coordinates = {origin, destination};
+		CoordinateSequence coords = new CoordinateArraySequence(coordinates);
+		LineString line = new LineString(coords, geometryFactory);
+		ArrayList<Coordinate> list;
+		if (line.intersects(objectsGeometry)) {
+			list = makePath(origin, destination);
+		} else {
+			list = new ArrayList<Coordinate>();
+			list.add(destination);
+		}
+		return list;
 	}
 	
 	private boolean pointNotVisited(MappingEvent event) {
