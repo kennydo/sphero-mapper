@@ -8,9 +8,12 @@ import java.util.List;
 import edu.berkeley.mapping.Commander;
 import edu.berkeley.mapping.MappingEvent;
 import orbotix.robot.base.CollisionDetectedAsyncData;
+import orbotix.robot.sensor.DeviceSensorsData;
 import orbotix.robot.sensor.LocatorData;
 import orbotix.sphero.CollisionListener;
 import orbotix.sphero.LocatorListener;
+import orbotix.sphero.SensorFlag;
+import orbotix.sphero.SensorListener;
 import orbotix.sphero.Sphero;
 
 /**
@@ -19,9 +22,11 @@ import orbotix.sphero.Sphero;
 public class SpheroCommander implements Commander{
 
     private Sphero sphero;
-    private static final float SQUARE_LENGTH = 2.0f;
-    private boolean collisionDetected;
-    private boolean distanceMade;
+    private volatile float currentHeading = 0.0f;
+    private static final float SQUARE_LENGTH = 1.0f;
+    private static final float DEFAULT_DRIVE_SPEED = 0.05f;
+    private volatile boolean collisionDetected;
+    private volatile boolean distanceMade;
 
     private enum DRIVE_TRANSITION_STATE {
         INIT, DRIVE
@@ -33,9 +38,9 @@ public class SpheroCommander implements Commander{
         sphero.getCollisionControl().addCollisionListener(new CollisionReportListener());
     }
 
-    private void drive(float headingVariation, float distance, boolean isReportFinish) {
-        sphero.getSensorControl().addLocatorListener(new DistanceTraveledListener(distance, isReportFinish));
-        sphero.drive(headingVariation, 1.0f);
+    private synchronized void drive(float headingVariation, float distance, boolean isReportFinish) {
+        sphero.getSensorControl().addSensorListener(new DistanceTraveledListener(distance, isReportFinish), SensorFlag.ATTITUDE, SensorFlag.LOCATOR);
+        sphero.drive(currentHeading + headingVariation, DEFAULT_DRIVE_SPEED);
     }
 
     @Override
@@ -48,15 +53,14 @@ public class SpheroCommander implements Commander{
         drive(headingVariation, Float.MAX_VALUE);
     }
 
-    public void drive(List<Coordinate> points) {
-        sphero.getSensorControl().addLocatorListener(new PointsTraveledListener(points));
-        sphero.drive(0f, 1.0f);
+    public synchronized void drive(List<Coordinate> points) {
+        sphero.getSensorControl().addSensorListener(new PointsTraveledListener(points));
+        sphero.drive(currentHeading, DEFAULT_DRIVE_SPEED);
     }
 
-    @Override
-    public void makeLeftSquare() {
-        sphero.getSensorControl().addLocatorListener(new SquareTraveledListener(true));
-        sphero.drive(180.0f, 1.0f);
+    public synchronized void makeLeftSquare() {
+        sphero.getSensorControl().addSensorListener(new SquareTraveledListener(true), SensorFlag.ATTITUDE, SensorFlag.LOCATOR);
+        sphero.drive(currentHeading + 180.0f, DEFAULT_DRIVE_SPEED);
     }
 
     @Override
@@ -65,10 +69,9 @@ public class SpheroCommander implements Commander{
         makeLeftSquare();
     }
 
-    @Override
-    public void makeRightSquare() {
-        sphero.getSensorControl().addLocatorListener(new SquareTraveledListener(false));
-        sphero.drive(180.0f, 1.0f);
+    public synchronized void makeRightSquare() {
+        sphero.getSensorControl().addSensorListener(new SquareTraveledListener(false), SensorFlag.ATTITUDE, SensorFlag.LOCATOR);
+        sphero.drive(currentHeading + 180.0f, DEFAULT_DRIVE_SPEED);
     }
 
     @Override
@@ -78,43 +81,48 @@ public class SpheroCommander implements Commander{
     }
 
     @Override
-    public void stop() {
+    public synchronized void stop() {
         sphero.stop();
+    }
+
+    @Override
+    public float getCurrentHeading() {
+        return 0;
     }
 
     public static float distanceTraveled(float startX, float startY, float endX, float endY) {
         return (float) Math.pow(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2), 0.5);
     }
 
-    private void processCollision(LocatorListener listener, float x, float y) {
+    private void processCollision(SensorListener listener, float x, float y) {
         processEvent(listener, x, y, MappingEvent.Type.COLLISION);
         collisionDetected = false;
     }
 
-    private void processSquareSuccess(LocatorListener listener, float x, float y) {
+    private void processSquareSuccess(SensorListener listener, float x, float y) {
         processEvent(listener, x, y, MappingEvent.Type.SQUARE_COMPLETED);
     }
 
-    private void processDistanceSuccess(LocatorListener listener, float x, float y) {
+    private void processDistanceSuccess(SensorListener listener, float x, float y) {
         processEvent(listener, x, y, MappingEvent.Type.DISTANCE_REACHED);
     }
 
-    private void processPointsSuccess(LocatorListener listener, float x, float y) {
+    private void processPointsSuccess(SensorListener listener, float x, float y) {
         processEvent(listener, x, y, MappingEvent.Type.POINTS_COMPLETED);
     }
 
-    private void processEvent(LocatorListener listener, float x, float y, MappingEvent.Type event) {
+    private synchronized void processEvent(SensorListener listener, float x, float y, MappingEvent.Type event) {
         MappingEvent collisionEvent = new MappingEvent(event, x, y);
         Runner.getMapper().reportEvent(collisionEvent);
         finish(listener);
     }
 
-    private void finish(LocatorListener listener) {
+    private void finish(SensorListener listener) {
         sphero.stop();
-        sphero.getSensorControl().removeLocatorListener(listener);
+        sphero.getSensorControl().removeSensorListener(listener);
     }
 
-    private class DistanceTraveledListener implements LocatorListener {
+    private class DistanceTraveledListener implements SensorListener {
 
         private float distanceToTravel;
         private DRIVE_TRANSITION_STATE currentState;
@@ -130,9 +138,10 @@ public class SpheroCommander implements Commander{
         }
 
         @Override
-        public void onLocatorChanged(LocatorData locatorData) {
-            float currX = locatorData.getPositionX();
-            float currY = locatorData.getPositionY();
+        public void sensorUpdated(DeviceSensorsData deviceSensorsData) {
+            currentHeading = deviceSensorsData.getAttitudeData().yaw;
+            float currX = deviceSensorsData.getLocatorData().getPositionX();
+            float currY = deviceSensorsData.getLocatorData().getPositionY();
             if (collisionDetected) {
                 processCollision(this, currX, currY);
                 return;
@@ -157,7 +166,7 @@ public class SpheroCommander implements Commander{
         }
     }
 
-    private class SquareTraveledListener implements LocatorListener {
+    private class SquareTraveledListener implements SensorListener {
 
         private DRIVE_TRANSITION_STATE currentState;
         private boolean ifLeft;
@@ -171,10 +180,21 @@ public class SpheroCommander implements Commander{
             this.turnsMade = 0;
         }
 
+        private void resetPositionAndTurn(float newX, float newY) {
+            startX = newX;
+            startY = newY;
+            if (ifLeft) {
+                sphero.drive(currentHeading + 270.0f, DEFAULT_DRIVE_SPEED);
+            } else {
+                sphero.drive(currentHeading + 90.0f, DEFAULT_DRIVE_SPEED);
+            }
+        }
+
         @Override
-        public void onLocatorChanged(LocatorData locatorData) {
-            float currX = locatorData.getPositionX();
-            float currY = locatorData.getPositionY();
+        public void sensorUpdated(DeviceSensorsData deviceSensorsData) {
+            currentHeading = deviceSensorsData.getAttitudeData().yaw;
+            float currX = deviceSensorsData.getLocatorData().getPositionX();
+            float currY = deviceSensorsData.getLocatorData().getPositionY();
             if (collisionDetected) {
                 processCollision(this, currX, currY);
                 return;
@@ -202,19 +222,9 @@ public class SpheroCommander implements Commander{
                     break;
             }
         }
-
-        private void resetPositionAndTurn(float newX, float newY) {
-            startX = newX;
-            startY = newY;
-            if (ifLeft) {
-                sphero.drive(270.0f, 1.0f);
-            } else {
-                sphero.drive(90.0f, 1.0f);
-            }
-        }
     }
 
-    private class PointsTraveledListener implements LocatorListener {
+    private class PointsTraveledListener implements SensorListener {
 
         private List<Coordinate> points;
         private DRIVE_TRANSITION_STATE currentState;
@@ -225,19 +235,32 @@ public class SpheroCommander implements Commander{
             this.currentState = DRIVE_TRANSITION_STATE.INIT;
         }
 
+        private float getDistance(Coordinate currentPoint, Coordinate newPoint) {
+            double diffX = currentPoint.x - newPoint.x;
+            double diffY = currentPoint.y - newPoint.y;
+            return (float)(Math.pow(Math.pow(diffX, 2) + Math.pow(diffY, 2), 0.5));
+        }
+
+        private float getHeading(Coordinate currentPoint, Coordinate newPoint) {
+            double diffX = currentPoint.x - newPoint.x;
+            double diffY = currentPoint.y - newPoint.y;
+            return (float) (Math.atan(diffY/diffX) * 180 / Math.PI);
+        }
+
         @Override
-        public void onLocatorChanged(LocatorData locatorData) {
+        public void sensorUpdated(DeviceSensorsData deviceSensorsData) {
+            currentHeading = deviceSensorsData.getAttitudeData().yaw;
             switch(currentState) {
                 case INIT:
-                    float startX = locatorData.getPositionX();
-                    float startY = locatorData.getPositionY();
+                    float startX = deviceSensorsData.getLocatorData().getPositionX();
+                    float startY = deviceSensorsData.getLocatorData().getPositionY();
                     currentPoint = new Coordinate(startX, startY);
                     currentState = DRIVE_TRANSITION_STATE.DRIVE;
                     distanceMade = true;
                     break;
                 case DRIVE:
-                    float currX = locatorData.getPositionX();
-                    float currY = locatorData.getPositionY();
+                    float currX = deviceSensorsData.getLocatorData().getPositionX();
+                    float currY = deviceSensorsData.getLocatorData().getPositionY();
                     if (collisionDetected) {
                         processCollision(this, currX, currY);
                         return;
@@ -254,18 +277,6 @@ public class SpheroCommander implements Commander{
                         }
                     }
             }
-        }
-
-        private float getDistance(Coordinate currentPoint, Coordinate newPoint) {
-            double diffX = currentPoint.x - newPoint.x;
-            double diffY = currentPoint.y - newPoint.y;
-            return (float)(Math.pow(Math.pow(diffX, 2) + Math.pow(diffY, 2), 0.5));
-        }
-
-        private float getHeading(Coordinate currentPoint, Coordinate newPoint) {
-            double diffX = currentPoint.x - newPoint.x;
-            double diffY = currentPoint.y - newPoint.y;
-            return (float) (Math.atan(diffY/diffX) * 180 / Math.PI);
         }
     }
 
