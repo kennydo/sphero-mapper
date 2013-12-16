@@ -15,6 +15,8 @@ import edu.berkeley.mapping.Mapper;
 import edu.berkeley.mapping.MappingEvent;
 import edu.berkeley.mapping.test.utils.CoordinateScaleFilter;
 import edu.berkeley.mapping.test.utils.MapperRenderer;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -109,6 +111,7 @@ public class Simulation extends TestbedTest{
 	}
 	
 	private static enum RunnerState{
+		IDLE,
 		/**
 		 * When the runner drives backward by half the square edge.
 		 */
@@ -128,7 +131,11 @@ public class Simulation extends TestbedTest{
 		/**
 		 * When the runner drives backward by half the square edge to complete the square.
 		 */
-		SQUARE_FASE5
+		SQUARE_FASE5,
+		/**
+		 * When the runner is drive through a path.
+		 */
+		PATH_DRIVING
 	}
 	
 	private class Runner implements Commander{
@@ -139,7 +146,13 @@ public class Simulation extends TestbedTest{
 		 */
 		private boolean isRightSquare = false;
 		
-		private RunnerState state;
+		/**
+		 * The path for the drive command witch receives a path as parameter.
+		 * @see #drive(java.util.List) 
+		 */
+		private List<Coordinate> path;
+		
+		private RunnerState state = RunnerState.IDLE;
 
 		@Override
 		public void drive(float headingVariation, float distance) {
@@ -161,7 +174,7 @@ public class Simulation extends TestbedTest{
 		 * @param distance 
 		 * @see #drive(float, float) 
 		 */
-		private void driveForSquare(float headingVariation, float distance){
+		private void driveForRunner(float headingVariation, float distance){
 			distanceObserver.observe(runnerBody.getPosition().x, runnerBody.getPosition().y, distance, EventTarget.RUNNER);
 			drive(headingVariation);
 		}
@@ -181,7 +194,6 @@ public class Simulation extends TestbedTest{
 			this.heading = heading;
 		}
 
-		@Override
 		public void makeLeftSquare() {
 			isRightSquare = false;
 			makeSquare();
@@ -194,7 +206,6 @@ public class Simulation extends TestbedTest{
 			makeLeftSquare();
 		}
 
-		@Override
 		public void makeRightSquare() {
 			isRightSquare = true;
 			makeSquare();
@@ -209,26 +220,27 @@ public class Simulation extends TestbedTest{
 		
 		private void makeSquare(){
 			state = RunnerState.SQUARE_FASE1;
-			driveForSquare(-180, SQUARE_EDGE/2);
+			driveForRunner(-180, SQUARE_EDGE/2);
 		}
 		
 		public void onDistanceReached(){
+			System.out.println("Runner: distanceReached(state=" + state + ")");
 			switch(state){
 				case SQUARE_FASE1:
 					state = RunnerState.SQUARE_FASE2;
-					driveForSquare(isRightSquare ? 90 : -90, SQUARE_EDGE);
+					driveForRunner(isRightSquare ? 90 : -90, SQUARE_EDGE);
 					break;
 				case SQUARE_FASE2:
 					state = RunnerState.SQUARE_FASE3;
-					driveForSquare(isRightSquare ? 90 : -90, SQUARE_EDGE);
+					driveForRunner(isRightSquare ? 90 : -90, SQUARE_EDGE);
 					break;
 				case SQUARE_FASE3:
 					state = RunnerState.SQUARE_FASE4;
-					driveForSquare(isRightSquare ? 90 : -90, SQUARE_EDGE);
+					driveForRunner(isRightSquare ? 90 : -90, SQUARE_EDGE);
 					break;
 				case SQUARE_FASE4:
 					state = RunnerState.SQUARE_FASE5;
-					driveForSquare(isRightSquare ? 90 : -90, SQUARE_EDGE/2);
+					driveForRunner(isRightSquare ? 90 : -90, SQUARE_EDGE/2);
 					break;
 				case SQUARE_FASE5:
 					mapper.reportEvent(
@@ -240,7 +252,63 @@ public class Simulation extends TestbedTest{
 						)
 					);
 					break;
+				case PATH_DRIVING:
+					drivePath();
+					break;
 			}
+		}
+
+		@Override
+		public void drive(List<Coordinate> points) {
+			path = points;
+			state = RunnerState.PATH_DRIVING;
+			drivePath();
+		}
+		
+		private void drivePath(){
+			System.out.println("Runner: drivePath(");
+			System.out.println(Arrays.toString(path.toArray()));
+			System.out.println(")");
+			
+			if(path.size() > 0){
+				mapper.reportEvent(
+					new MappingEvent(
+						MappingEvent.Type.POINT_REACHED,
+						runnerBody.getPosition().x,
+						runnerBody.getPosition().y,
+						heading
+					)
+				);
+				Coordinate origin = new Coordinate(runnerBody.getPosition().x, runnerBody.getPosition().y);
+				Coordinate destiny = path.remove(0);
+				double angle = 180f * Math.atan2(destiny.y-origin.y, destiny.x-origin.x) / Math.PI;
+				float headingVariation = (float) angle - heading;
+				driveForRunner(headingVariation, (float) origin.distance(destiny));
+			}else{
+				state = RunnerState.IDLE;
+				stop();
+				mapper.reportEvent(
+					new MappingEvent(
+						MappingEvent.Type.POINTS_COMPLETED,
+						runnerBody.getPosition().x,
+						runnerBody.getPosition().y,
+						heading
+					)
+				);
+			}
+		}
+		
+		public void cancelPathDriving(){
+			path.clear();
+		}
+		
+		public RunnerState getState(){
+			return state;
+		}
+
+		@Override
+		public float getCurrentHeading() {
+			return heading;
 		}
 	}
 	
@@ -311,6 +379,9 @@ public class Simulation extends TestbedTest{
 				try {
 					synchronized(startSemaphore){
 						if(cancel){
+							if(eventTarget == EventTarget.RUNNER){
+								if(runner.getState() == RunnerState.PATH_DRIVING) runner.cancelPathDriving();
+							}
 							cancel = false;
 							startSemaphore.acquire();
 						}

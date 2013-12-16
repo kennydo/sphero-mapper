@@ -52,6 +52,7 @@ public class MapperRenderer extends JFrame{
 
 		private final Color freeMapColor = new Color(0X7FFFFF00, true);
 		private final Color objectMapColor = new Color(0X7F0000FF, true);
+		private final Color perimeterMapColor = new Color(0X7F33FF00, true);
 		
 		public ContentPanel() {
 			this.setBackground(Color.BLACK);
@@ -63,6 +64,7 @@ public class MapperRenderer extends JFrame{
 			Graphics2D g2d = (Graphics2D) g;
 			Geometry freeGeometry = mapper.getFreeGeometry();
 			Geometry objectsGeometry = mapper.getObjectsGeometry();
+			Geometry perimeterGeometry = mapper.getPerimeterGeometry();
 			/*Define bounds*/
 			Rectangle bounds = defaultBounds;
 			if(!freeGeometry.isEmpty()){
@@ -106,6 +108,14 @@ public class MapperRenderer extends JFrame{
 				g2d.fill(objectsShape);
 				
 				g2d.setColor(Color.BLUE);
+				g2d.draw(objectsShape);
+			}
+			
+			//Perimeters geometry
+			if(!perimeterGeometry.isEmpty()){
+				Shape objectsShape = shapeFactory.fromGeometry(perimeterGeometry);
+				
+				g2d.setColor(Color.GREEN);
 				g2d.draw(objectsShape);
 			}
 			
