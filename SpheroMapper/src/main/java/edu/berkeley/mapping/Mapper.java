@@ -16,6 +16,8 @@ import com.vividsolutions.jts.shape.random.RandomPointsBuilder;
 import com.vividsolutions.jtstest.function.CreateRandomShapeFunctions;
 import com.vividsolutions.jtstest.function.CreateShapeFunctions;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.Random;
 
 /**
@@ -67,7 +69,7 @@ public class Mapper {
 	/**
 	 * List of listeners to be triggered every time a state is set.
 	 */
-	private ArrayList<StateChangeListener> stateChangeListeners = new ArrayList<StateChangeListener>();
+	private final ArrayList<StateChangeListener> stateChangeListeners = new ArrayList<StateChangeListener>();
 	
 	/**
 	 * A random number generator to be used temporarily in <code>calculateDriveHeadingVariation</code> method.
@@ -78,7 +80,7 @@ public class Mapper {
 	/**
 	 * The geometry factory for the mapping process.
 	 */
-	private GeometryFactory geometryFactory = new GeometryFactory();
+	private final GeometryFactory geometryFactory = new GeometryFactory();
 	
 	/**
 	 * A random points builder
@@ -136,6 +138,14 @@ public class Mapper {
 		this.parameters = parameters;
 	}
 	
+	private void addFreeGeometry(Geometry freeGeometry){
+		this.freeGeometry = this.freeGeometry.union(freeGeometry);
+	}
+	
+	private void addObjectGeometry(Geometry obejctGeometry){
+		objectsGeometry = objectsGeometry.union(obejctGeometry);
+	}
+	
 	/**
 	 * This method must be called by the "robot side" implementation to report
 	 * any relevant event to the mapper.
@@ -158,7 +168,7 @@ public class Mapper {
 					case DISTANCE_REACHED:
 					{
 						Geometry g = generateDistanceReachedGeometry(event);
-						freeGeometry = freeGeometry.union(g);
+						addFreeGeometry(g);
 						headingVariation = 0;
 						setState(isDone() ? State.FINISHED : State.SEARCH_OBSTACLE, event);
 						break;
@@ -187,6 +197,12 @@ public class Mapper {
 							}
 						}
 						break;
+					case POINT_REACHED:
+						isDone();
+						break;
+					case POINTS_COMPLETED: //temporary
+						setState(State.SEARCH_OBSTACLE, event);
+						isDone();
 					default:
 						mappingEventNotExpected(event);
 				}
@@ -208,10 +224,9 @@ public class Mapper {
 							Polygon obstacle = geometryFactory.createPolygon(obstaclePoints.toArray(new Coordinate[obstaclePoints.size()]));
 							Point p = geometryFactory.createPoint(possibleEndPoint);
 							if(p.within(obstacle)){
-								System.out.println("Perimeter!!!");
 								perimeterGeometry = perimeterGeometry.union(obstacle);
 							}else{
-								objectsGeometry = objectsGeometry.union(obstacle);
+								addObjectGeometry(obstacle);
 							}
 							if (perimeterGeometry.isEmpty()) {
 								headingVariation = calculateDriveHeadingVariation(event);
@@ -246,6 +261,15 @@ public class Mapper {
 				break;
 			case SEARCH_OBSTACLE:
 				commander.drive(headingVariation, parameters.getCommanderDriveDistance());
+				if(!perimeterGeometry.isEmpty()){ //Temporary for tests
+					RandomPointsBuilder builder = new RandomPointsBuilder(geometryFactory);
+					builder.setExtent(perimeterGeometry);
+					builder.setNumPoints(4);
+					Geometry points = builder.getGeometry();
+					LinkedList<Coordinate> coordinates = new LinkedList<>(Arrays.asList(points.getCoordinates()));
+					coordinates.add(new Coordinate(0, 0));
+					commander.drive(coordinates);
+				}
 				break;
 			case CONTOUR_OBSTACLE:
 				commander.makeRightSquare(event.getAngle());
@@ -446,6 +470,11 @@ public class Mapper {
 	 * @return <code>true</code> if the mapping is done and <code>false</code> otherwise. It's just returning false currently.
 	 */
 	private boolean isDone(){
+		if(perimeterGeometry.isEmpty()) return false;
+		double area = perimeterGeometry.difference(freeGeometry.union(objectsGeometry)).getArea();
+		//area = area / ((1/4)*Math.PI * getParameters().getRunnerWidth()*getParameters().getRunnerWidth());
+		System.out.println("Unknown area: " + area);
+		System.out.println("Robot area: " + (((1d/4d) * Math.PI * getParameters().getRunnerWidth()*getParameters().getRunnerWidth())));
 		return false;
 	}
 
@@ -480,6 +509,10 @@ public class Mapper {
 
 	public Geometry getFreeGeometry() {
 		return freeGeometry;
+	}
+
+	public Geometry getPerimeterGeometry() {
+		return perimeterGeometry;
 	}
 	
 	public void addStateChangeListener(StateChangeListener listener){

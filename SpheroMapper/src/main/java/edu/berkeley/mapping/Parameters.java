@@ -18,6 +18,11 @@ public class Parameters {
 	private float contourFinishPointRadiusThreshold = 8;
 	
 	/**
+	 * The length of the square the commander makes.
+	 */
+	private float squareLenght = 10;
+	
+	/**
 	 * @return The distance for the algorithm to set for commander drive function.
 	 * @see Commander#drive(float, float) 
 	 */
@@ -63,4 +68,14 @@ public class Parameters {
 	public void setContourFinishPointRadiusThreshold(float contourFinishPointRadiusThreshold) {
 		this.contourFinishPointRadiusThreshold = contourFinishPointRadiusThreshold;
 	}
+
+	public float getSquareLenght() {
+		return squareLenght;
+	}
+
+	public void setSquareLenght(float squareLenght) {
+		this.squareLenght = squareLenght;
+	}
+	
+	
 }
