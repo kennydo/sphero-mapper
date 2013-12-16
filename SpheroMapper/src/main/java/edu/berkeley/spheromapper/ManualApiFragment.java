@@ -57,7 +57,10 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
                 Log.d("ManualApi", "Left Square button pressed");
                 if(hasCommander()){
                     // call the SpheroCommander here
-                    commander.makeLeftSquare();
+                    EditText editAngle = (EditText) rootView.findViewById(R.id.edit_angle);
+                    Float angle = Float.valueOf(editAngle.getText().toString());
+                    Log.d("ManualApi", "Left square button pressed with angle=" + angle);
+                    commander.makeLeftSquare(angle);
                 }
             }
         });
@@ -67,7 +70,10 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
                 Log.d("ManualApi", "Right Square button pressed");
                 if(hasCommander()){
                     // call the SpheroCommander here
-                    commander.makeRightSquare();
+                    EditText editAngle = (EditText) rootView.findViewById(R.id.edit_angle);
+                    Float angle = Float.valueOf(editAngle.getText().toString());
+                    Log.d("ManualApi", "Right square button pressed with angle=" + angle);
+                    commander.makeRightSquare(angle);
                 }
             }
         });
