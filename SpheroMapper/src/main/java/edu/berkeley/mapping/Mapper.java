@@ -359,7 +359,7 @@ public class Mapper {
 					builder.setExtent(perimeterGeometry);
 					builder.setNumPoints(4);
 					Geometry points = builder.getGeometry();
-					LinkedList<Coordinate> coordinates = new LinkedList<>(Arrays.asList(points.getCoordinates()));
+					LinkedList<Coordinate> coordinates = new LinkedList<Coordinate>(Arrays.asList(points.getCoordinates()));
 					coordinates.add(new Coordinate(0, 0));
 					commander.drive(coordinates);
 				}
