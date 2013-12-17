@@ -32,6 +32,8 @@ public class ManualDriveFragment extends ListFragment implements SpheroListenerF
     private final int COLLISION_HISTORY_SIZE = 7;
     private ArrayList<String> collisionLocations;
 
+    private float previousX, previousY;
+
     private ArrayAdapter mAdapter;
 
     @Override
@@ -139,9 +141,17 @@ public class ManualDriveFragment extends ListFragment implements SpheroListenerF
     }
 
     private String locatorDataToString(LocatorData locatorData){
-        float x = locatorData.getPositionX();
-        float y = locatorData.getPositionY();
+        float x, y;
+        if(locatorData == null){
+            x = previousX;
+            y = previousY;
+        } else {
+            x = locatorData.getPositionX();
+            y = locatorData.getPositionY();
+        }
 
+        previousX = x;
+        previousY = y;
         return "(" + x + ", " + y + ")";
     }
 
