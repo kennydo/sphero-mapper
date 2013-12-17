@@ -73,6 +73,7 @@
     <orderEntry type="library" exported="" name="RobotLibrary" level="project" />
     <orderEntry type="library" exported="" name="achievementManager" level="project" />
     <orderEntry type="library" exported="" name="jts-1.13" level="project" />
+    <orderEntry type="library" exported="" name="JTS_Test" level="project" />
     <orderEntry type="library" exported="" name="support-v4-19.0.0" level="project" />
     <orderEntry type="library" exported="" name="ComAndroidSupportAppcompatV71900.aar" level="project" />
   </component>

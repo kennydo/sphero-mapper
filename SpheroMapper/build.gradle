@@ -27,4 +27,5 @@ dependencies {
     compile files('libs/jts-1.13.jar')
     compile files('libs/RobotLibrary.jar')
     compile files('libs/achievementManager.jar')
+    compile files('libs/JTS_Test.jar')
 }
