@@ -81,14 +81,13 @@
         <EditText
             android:layout_width="150dp"
             android:layout_height="wrap_content"
-            android:inputType="numberSigned"
             android:ems="10"
             android:layout_column="1"
             android:layout_columnSpan="1"
             android:layout_row="0"
             android:layout_rowSpan="1"
             android:id="@+id/edit_heading"
-            android:numeric="signed|decimal"
+            android:inputType="number|numberDecimal|numberSigned"
             android:text="0.0" />
 
         <TextView
@@ -104,7 +103,6 @@
         <EditText
             android:layout_width="150dp"
             android:layout_height="wrap_content"
-            android:inputType="number"
             android:ems="10"
             android:id="@+id/edit_distance"
             android:layout_column="1"
@@ -112,6 +110,7 @@
             android:layout_row="1"
             android:layout_rowSpan="1"
             android:editable="true"
+            android:inputType="number|numberDecimal"
             android:text="0.0"
             android:numeric="decimal" />
 
