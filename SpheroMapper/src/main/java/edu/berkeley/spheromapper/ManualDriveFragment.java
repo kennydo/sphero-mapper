@@ -19,6 +19,7 @@ import android.widget.TextView;
 import orbotix.robot.base.CollisionDetectedAsyncData;
 import orbotix.robot.sensor.DeviceSensorsData;
 import orbotix.robot.sensor.LocatorData;
+import orbotix.robot.sensor.LocatorSensor;
 import orbotix.sphero.Sphero;
 
 
@@ -141,12 +142,14 @@ public class ManualDriveFragment extends ListFragment implements SpheroListenerF
         mSphero = sphero;
     }
 
-    private String locatorDataToString(LocatorData locatorData){
+    private synchronized String locatorDataToString(LocatorData locatorData){
         float x, y;
-        if(locatorData == null){
+        if(locatorData == null || locatorData.getPosition() == null){
             x = previousX;
             y = previousY;
         } else {
+            LocatorSensor position = locatorData.getPosition();
+            Log.d("WTF",position.toString());
             x = locatorData.getPositionX();
             y = locatorData.getPositionY();
         }

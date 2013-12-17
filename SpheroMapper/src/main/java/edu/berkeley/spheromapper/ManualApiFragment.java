@@ -168,7 +168,7 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
 
     private String locatorDataToString(LocatorData locatorData){
         float x, y;
-        if(locatorData == null){
+        if(locatorData == null || locatorData.getPosition() == null){
             x = previousX;
             y = previousY;
         } else {
