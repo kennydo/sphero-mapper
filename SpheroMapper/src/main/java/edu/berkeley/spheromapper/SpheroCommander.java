@@ -23,8 +23,8 @@ public class SpheroCommander implements Commander{
 
     private Sphero sphero;
     private float currentHeading = 0.0f;
-    private static final float SQUARE_LENGTH = 1.0f;
-    private static final float DEFAULT_DRIVE_SPEED = 0.5f;
+    private static final float SQUARE_LENGTH = 25.0f;
+    private static final float DEFAULT_DRIVE_SPEED = 0.25f;
     private boolean collisionDetected;
     private float collisionAngle;
     private boolean distanceMade;
@@ -46,15 +46,19 @@ public class SpheroCommander implements Commander{
         sphero.getSensorControl().addSensorListener(distanceTraveledListener, SensorFlag.ATTITUDE, SensorFlag.LOCATOR);
         sphero.getSensorControl().addSensorListener(squareTraveledListener, SensorFlag.ATTITUDE, SensorFlag.LOCATOR);
         sphero.getSensorControl().addSensorListener(pointsTraveledListener, SensorFlag.ATTITUDE, SensorFlag.LOCATOR);
-        sphero.getCollisionControl().startDetection(40, 60, 40, 60, 40);
     }
 
     private synchronized void drive(float headingVariation, float distance, boolean isReportFinish) {
         sphero.stop();
         disableListeners();
         Log.d("DRIVING", "Starting to drive in " + headingVariation + " for " + distance);
+        currentHeading = (currentHeading - headingVariation) % 360;
+        if (currentHeading < 0) {
+            currentHeading += 360;
+        }
+        sphero.rotate(headingVariation);
+        sphero.drive(currentHeading, DEFAULT_DRIVE_SPEED);
         distanceTraveledListener.initialize(distance, isReportFinish);
-        sphero.drive(currentHeading + headingVariation, DEFAULT_DRIVE_SPEED);
     }
 
     @Override
@@ -73,8 +77,12 @@ public class SpheroCommander implements Commander{
     }
 
     public void makeLeftSquare() {
+        sphero.stop();
+        disableListeners();
+        currentHeading = (currentHeading + 180.0f) % 360;
+        sphero.rotate(180.0f);
+        sphero.drive(currentHeading, DEFAULT_DRIVE_SPEED);
         squareTraveledListener.initialize(true);
-        sphero.drive(currentHeading + 180.0f, DEFAULT_DRIVE_SPEED);
     }
 
     @Override
@@ -84,8 +92,12 @@ public class SpheroCommander implements Commander{
     }
 
     public void makeRightSquare() {
+        sphero.stop();
+        disableListeners();
+        currentHeading = (currentHeading + 180.0f) % 360;
+        sphero.rotate(180.0f);
+        sphero.drive(currentHeading, DEFAULT_DRIVE_SPEED);
         squareTraveledListener.initialize(false);
-        sphero.drive(currentHeading + 180.0f, DEFAULT_DRIVE_SPEED);
     }
 
     @Override
@@ -175,10 +187,10 @@ public class SpheroCommander implements Commander{
         @Override
         public synchronized void sensorUpdated(DeviceSensorsData deviceSensorsData) {
             if (isEnabled) {
-                currentHeading = deviceSensorsData.getAttitudeData().yaw;
-                while (currentHeading < 0) {
-                    currentHeading += 360;
-                }
+                //currentHeading = deviceSensorsData.getAttitudeData().yaw;
+                //while (currentHeading < 0) {
+                //    currentHeading += 360;
+                //}
                 float currX = deviceSensorsData.getLocatorData().getPositionX();
                 float currY = deviceSensorsData.getLocatorData().getPositionY();
                 Log.d("Drive updated", "currX = " + currX + ", currY = " + currY);
@@ -236,22 +248,31 @@ public class SpheroCommander implements Commander{
             this.ifLeft = ifLeft;
             this.currentState = DRIVE_TRANSITION_STATE.INIT;
             this.turnsMade = 0;
+            this.isEnabled = true;
         }
 
         private void resetPositionAndTurn(float newX, float newY) {
+            Log.d("Reset", "Reseting from " + newX + " and " + newY);
             startX = newX;
             startY = newY;
+            sphero.stop();
             if (ifLeft) {
-                sphero.drive(currentHeading + 270.0f, DEFAULT_DRIVE_SPEED);
+                sphero.rotate(90.0f);
+                currentHeading += 90.0f;
+                currentHeading %= 360;
+                sphero.drive(currentHeading, DEFAULT_DRIVE_SPEED);
             } else {
-                sphero.drive(currentHeading + 90.0f, DEFAULT_DRIVE_SPEED);
+                sphero.rotate(270.0f);
+                currentHeading += 270.0f;
+                currentHeading %= 360;
+                sphero.drive(currentHeading, DEFAULT_DRIVE_SPEED);
             }
         }
 
         @Override
         public void sensorUpdated(DeviceSensorsData deviceSensorsData) {
             if (isEnabled) {
-                currentHeading = deviceSensorsData.getAttitudeData().yaw;
+                //currentHeading = deviceSensorsData.getAttitudeData().yaw;
                 float currX = deviceSensorsData.getLocatorData().getPositionX();
                 float currY = deviceSensorsData.getLocatorData().getPositionY();
                 if (collisionDetected) {
@@ -266,12 +287,14 @@ public class SpheroCommander implements Commander{
                         break;
                     case DRIVE:
                         if (turnsMade == 0) {
-                            if (distanceTraveled(startX, startY, currX, currY) > SQUARE_LENGTH / 2) {
+                            Log.d("First turn", "GO HERE");
+                            if (distanceTraveled(startX, startY, currX, currY) > (SQUARE_LENGTH / 2.0f)) {
+                                Log.d("First turn", "EVENTUALLY HERE");
                                 resetPositionAndTurn(currX, currY);
                                 turnsMade++;
                             }
                         }  else if (turnsMade == 4) {
-                            if (distanceTraveled(startX, startY, currX, currY) > SQUARE_LENGTH / 2) {
+                            if (distanceTraveled(startX, startY, currX, currY) > (SQUARE_LENGTH / 2.0f)) {
                                 processSquareSuccess(currX, currY);
                             }
                         } else if (distanceTraveled(startX, startY, currX, currY) > SQUARE_LENGTH) {
@@ -346,9 +369,12 @@ public class SpheroCommander implements Commander{
                                 Coordinate newPoint = points.remove(0);
                                 float heading = getHeading(currentPoint, newPoint);
                                 float distance = getDistance(currentPoint, newPoint);
+                                currentHeading = heading;
                                 currentPoint = newPoint;
-                                processIntermediatePointSuccess(currX, currY);
-                                drive(heading, distance, false);
+                                if (points.size() != 1) {
+                                    processIntermediatePointSuccess(currX, currY);
+                                }
+                                drive(currentHeading, distance, false);
                             }
                             return;
                         }
