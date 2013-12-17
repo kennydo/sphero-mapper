@@ -31,7 +31,8 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
     private final int COLLISION_HISTORY_SIZE = 7;
     private ArrayList<String> collisionLocations;
 
-    private float previousX, previousY;
+    private float previousX = 0;
+    private float previousY = 0;
 
     private ArrayAdapter mAdapter;
 
