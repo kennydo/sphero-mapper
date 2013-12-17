@@ -68,6 +68,7 @@ public class SpheroCommander implements Commander{
     }
 
     public void drive(List<Coordinate> points) {
+        pointsTraveledListener.initialize(points);
         sphero.drive(currentHeading, DEFAULT_DRIVE_SPEED);
     }
 
@@ -125,6 +126,10 @@ public class SpheroCommander implements Commander{
 
     private void processPointsSuccess(float x, float y) {
         processEvent(x, y, MappingEvent.Type.POINTS_COMPLETED);
+    }
+
+    private void processIntermediatePointSuccess(float x, float y) {
+        processEvent(x, y, MappingEvent.Type.POINT_REACHED);
     }
 
     private synchronized void processEvent(float x, float y, MappingEvent.Type event) {
@@ -290,13 +295,14 @@ public class SpheroCommander implements Commander{
         private Coordinate currentPoint;
         private boolean isEnabled;
 
-        public PointsTraveledListener(List<Coordinate> points) {
-            this.points = new ArrayList<Coordinate>(points);
-            this.currentState = DRIVE_TRANSITION_STATE.INIT;
-        }
-
         public PointsTraveledListener() {
             isEnabled = false;
+        }
+
+        public void initialize(List<Coordinate> points) {
+            this.points = new ArrayList<Coordinate>(points);
+            this.currentState = DRIVE_TRANSITION_STATE.INIT;
+            isEnabled = true;
         }
 
         private float getDistance(Coordinate currentPoint, Coordinate newPoint) {
@@ -315,6 +321,9 @@ public class SpheroCommander implements Commander{
         public void sensorUpdated(DeviceSensorsData deviceSensorsData) {
             if (isEnabled) {
                 currentHeading = deviceSensorsData.getAttitudeData().yaw;
+                while (currentHeading < 0) {
+                    currentHeading += 360;
+                }
                 switch(currentState) {
                     case INIT:
                         float startX = deviceSensorsData.getLocatorData().getPositionX();
@@ -338,9 +347,12 @@ public class SpheroCommander implements Commander{
                                 float heading = getHeading(currentPoint, newPoint);
                                 float distance = getDistance(currentPoint, newPoint);
                                 currentPoint = newPoint;
+                                processIntermediatePointSuccess(currX, currY);
                                 drive(heading, distance, false);
                             }
+                            return;
                         }
+                        sphero.drive(currentHeading, DEFAULT_DRIVE_SPEED);
                 }
             }
 
