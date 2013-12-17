@@ -135,7 +135,12 @@ public class ManualApiFragment extends ListFragment implements SpheroListenerFra
         LocatorData locatorData = sensorsData.getLocatorData();
 
         String coordinates = locatorDataToString(locatorData);
-        ((TextView) rootView.findViewById(R.id.location_text)).setText(coordinates);
+        TextView locationText = (TextView) rootView.findViewById(R.id.location_text);
+        if(locationText != null){
+         locationText.setText(coordinates);
+        } else {
+            Log.d("ManualApi", "Could not access the location_text element, so couldn't update coordinates to " + coordinates);
+        }
     }
 
     @Override
