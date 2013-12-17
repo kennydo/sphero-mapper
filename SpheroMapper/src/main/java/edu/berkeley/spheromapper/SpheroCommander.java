@@ -186,7 +186,7 @@ public class SpheroCommander implements Commander{
 
         @Override
         public synchronized void sensorUpdated(DeviceSensorsData deviceSensorsData) {
-            if (isEnabled) {
+            if (isEnabled && deviceSensorsData != null && deviceSensorsData.getLocatorData() != null && deviceSensorsData.getLocatorData().getPosition() != null) {
                 //currentHeading = deviceSensorsData.getAttitudeData().yaw;
                 //while (currentHeading < 0) {
                 //    currentHeading += 360;
@@ -271,7 +271,7 @@ public class SpheroCommander implements Commander{
 
         @Override
         public void sensorUpdated(DeviceSensorsData deviceSensorsData) {
-            if (isEnabled) {
+            if (isEnabled && deviceSensorsData != null && deviceSensorsData.getLocatorData() != null && deviceSensorsData.getLocatorData().getPosition() != null) {
                 //currentHeading = deviceSensorsData.getAttitudeData().yaw;
                 float currX = deviceSensorsData.getLocatorData().getPositionX();
                 float currY = deviceSensorsData.getLocatorData().getPositionY();
@@ -342,7 +342,7 @@ public class SpheroCommander implements Commander{
 
         @Override
         public void sensorUpdated(DeviceSensorsData deviceSensorsData) {
-            if (isEnabled) {
+            if (isEnabled && deviceSensorsData != null && deviceSensorsData.getLocatorData() != null && deviceSensorsData.getLocatorData().getPosition() != null) {
                 currentHeading = deviceSensorsData.getAttitudeData().yaw;
                 while (currentHeading < 0) {
                     currentHeading += 360;
