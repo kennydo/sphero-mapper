@@ -162,7 +162,7 @@ public class Simulation extends TestbedTest{
 
 		@Override
 		public void drive(float headingVariation) {
-			System.out.println("Runner: drive(headingVariation="+headingVariation+")");
+			//System.out.println("Runner: drive(headingVariation="+headingVariation+")");
 			setHeading(heading + headingVariation);
 			double rad = (heading/180f)*Math.PI;
 			runnerBody.setLinearVelocity(new Vec2((float) Math.cos(rad)*5f, (float) Math.sin(rad)*5f));
@@ -201,7 +201,7 @@ public class Simulation extends TestbedTest{
 
 		@Override
 		public void makeLeftSquare(float collisionAngle) {
-			System.out.println("Runner: makeLeftSquare(collisionAngle=" + collisionAngle + ")");
+			//System.out.println("Runner: makeLeftSquare(collisionAngle=" + collisionAngle + ")");
 			setHeading(collisionAngle);
 			makeLeftSquare();
 		}
@@ -213,7 +213,7 @@ public class Simulation extends TestbedTest{
 
 		@Override
 		public void makeRightSquare(float collisionAngle) {
-			System.out.println("Runner: makeRightSquare(collisionAngle=" + collisionAngle + ")");
+			//System.out.println("Runner: makeRightSquare(collisionAngle=" + collisionAngle + ")");
 			setHeading(collisionAngle);
 			makeRightSquare();
 		}
@@ -224,7 +224,7 @@ public class Simulation extends TestbedTest{
 		}
 		
 		public void onDistanceReached(){
-			System.out.println("Runner: distanceReached(state=" + state + ")");
+			//System.out.println("Runner: distanceReached(state=" + state + ")");
 			switch(state){
 				case SQUARE_FASE1:
 					state = RunnerState.SQUARE_FASE2;
@@ -331,8 +331,8 @@ public class Simulation extends TestbedTest{
 				double angle = Math.atan2(directionVector.y, directionVector.x);
 				angle = 180f*angle/Math.PI;
 				if(angle < 360) angle += 360;
-				System.out.println("Angle: " + angle);
-				System.out.println("Heading: " + runner.getHeading());
+				//System.out.println("Angle: " + angle);
+				//System.out.println("Heading: " + runner.getHeading());
 				
 				mapper.reportEvent(new MappingEvent(MappingEvent.Type.COLLISION, runnerBody.getPosition().x, runnerBody.getPosition().y, (float) angle));
 			}

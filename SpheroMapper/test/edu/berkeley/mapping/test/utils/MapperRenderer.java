@@ -8,6 +8,7 @@ package edu.berkeley.mapping.test.utils;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.LineString;
 import edu.berkeley.mapping.Mapper;
 import edu.berkeley.mapping.MappingEvent;
 import edu.berkeley.mapping.StateChangeListener;
@@ -65,6 +66,8 @@ public class MapperRenderer extends JFrame{
 			Geometry freeGeometry = mapper.getFreeGeometry();
 			Geometry objectsGeometry = mapper.getObjectsGeometry();
 			Geometry perimeterGeometry = mapper.getPerimeterGeometry();
+			Geometry pathGeometry = mapper.getPathGeometry();
+			Geometry edgesGeometry = mapper.getEdgesGeometry();
 			/*Define bounds*/
 			Rectangle bounds = defaultBounds;
 			if(!freeGeometry.isEmpty()){
@@ -117,6 +120,24 @@ public class MapperRenderer extends JFrame{
 				
 				g2d.setColor(Color.GREEN);
 				g2d.draw(objectsShape);
+			}
+			
+			//Path geometry
+			if(pathGeometry != null){
+				Shape objectsShape = shapeFactory.fromGeometry(pathGeometry);
+				
+				g2d.setColor(Color.ORANGE);
+				g2d.draw(objectsShape);
+			}
+			
+			//Edges geometry
+			if(edgesGeometry != null){
+				for (int i = 0; i < edgesGeometry.getNumGeometries(); i++) {
+					Geometry line = edgesGeometry.getGeometryN(i);
+					Shape objectsShape = shapeFactory.fromGeometry(line);
+					g2d.setColor(Color.CYAN);
+					g2d.draw(objectsShape);
+				}
 			}
 			
 			if(lastEvent != null){
