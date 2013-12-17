@@ -26,6 +26,7 @@ public class SpheroCommander implements Commander{
     private static final float SQUARE_LENGTH = 1.0f;
     private static final float DEFAULT_DRIVE_SPEED = 0.05f;
     private volatile boolean collisionDetected;
+    private volatile float collisionAngle;
     private volatile boolean distanceMade;
 
     private enum DRIVE_TRANSITION_STATE {
@@ -95,7 +96,9 @@ public class SpheroCommander implements Commander{
     }
 
     private void processCollision(SensorListener listener, float x, float y) {
-        processEvent(listener, x, y, MappingEvent.Type.COLLISION);
+        MappingEvent collisionEvent = new MappingEvent(MappingEvent.Type.COLLISION, x, y, collisionAngle);
+        Runner.getMapper().reportEvent(collisionEvent);
+        //processEvent(listener, x, y, MappingEvent.Type.COLLISION);
         collisionDetected = false;
     }
 
@@ -285,6 +288,9 @@ public class SpheroCommander implements Commander{
         @Override
         public void collisionDetected(CollisionDetectedAsyncData collisionDetectedAsyncData) {
             collisionDetected = true;
+            short impactX = collisionDetectedAsyncData.getImpactPower().x;
+            short impactY = collisionDetectedAsyncData.getImpactPower().y;
+            collisionAngle = (float) Math.atan(impactY / impactX);
         }
     }
 
