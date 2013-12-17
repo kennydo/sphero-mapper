@@ -258,7 +258,7 @@ public class MainActivity extends ActionBarActivity implements ActionBar.OnNavig
             }
         }, SensorFlag.ACCELEROMETER_NORMALIZED, SensorFlag.ATTITUDE, SensorFlag.LOCATOR);
 
-        mSphero.getCollisionControl().startDetection(255, 255, 255, 255, 255);
+        mSphero.getCollisionControl().startDetection(100, 40, 100, 40, 100);
         mSphero.getCollisionControl().addCollisionListener(new CollisionListener() {
             @Override
             public void collisionDetected(CollisionDetectedAsyncData collisionDetectedAsyncData) {
