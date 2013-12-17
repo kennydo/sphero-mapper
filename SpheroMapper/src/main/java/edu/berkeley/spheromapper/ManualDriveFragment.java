@@ -124,7 +124,12 @@ public class ManualDriveFragment extends ListFragment implements SpheroListenerF
         LocatorData locatorData = sensorsData.getLocatorData();
 
         String coordinates = locatorDataToString(locatorData);
-        ((TextView) rootView.findViewById(R.id.location_text)).setText(coordinates);
+        if(rootView != null){
+            TextView textThing = ((TextView) rootView.findViewById(R.id.location_text));
+            if(textThing != null){
+                textThing.setText(coordinates);
+            }
+        }
     }
 
     public void onSpheroCollision(CollisionDetectedAsyncData collisionData, DeviceSensorsData sensorsData){
