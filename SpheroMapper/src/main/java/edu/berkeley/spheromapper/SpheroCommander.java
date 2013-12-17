@@ -396,15 +396,7 @@ public class SpheroCommander implements Commander{
             collisionDetected = true;
             short impactX = collisionDetectedAsyncData.getImpactPower().x;
             short impactY = collisionDetectedAsyncData.getImpactPower().y;
-            if (impactX == 0) {
-                if (impactY > 0) {
-                    collisionAngle = 90;
-                } else {
-                    collisionAngle = 270;
-                }
-            } else {
-                collisionAngle = (float) Math.atan((impactY) * 1.0 / (impactX * 1.0));
-            }
+            collisionAngle = (float) (Math.atan2(impactY, impactX) * 180.0f / Math.PI);
         }
     }
 
