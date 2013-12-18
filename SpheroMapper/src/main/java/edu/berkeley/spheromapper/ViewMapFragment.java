@@ -7,14 +7,17 @@ import android.support.v4.app.Fragment;
 import android.content.Context;
 import android.os.Bundle;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
 import java.util.List;
 
+import edu.berkeley.mapping.MappingEvent;
 import orbotix.robot.base.CollisionDetectedAsyncData;
 import orbotix.robot.sensor.DeviceSensorsData;
 import orbotix.robot.sensor.LocatorData;
@@ -28,12 +31,24 @@ public class ViewMapFragment extends Fragment implements SpheroListenerFragment 
     private View rootView;
     private MapSurfaceView surface;
 
+    private float positionX = 0;
+    private float positionY = 0;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.fragment_view_map, container, false);
         surface = (MapSurfaceView) rootView.findViewById(R.id.map_surface_view);
 
         populateCollisionHistory(((CollisionLocationHistoryProvider) getActivity()).getCollisionLocations());
+
+        Button startButton = (Button) rootView.findViewById(R.id.start_button);
+        startButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d("ViewMap", "Reporting START event with position=(" + positionX + ", "+ positionY + ")");
+                Runner.getMapper().reportEvent(new MappingEvent(MappingEvent.Type.START, positionX, positionY));
+            }
+        });
         return rootView;
     }
 
@@ -47,7 +62,10 @@ public class ViewMapFragment extends Fragment implements SpheroListenerFragment 
 
     @Override
     public void onSpheroSensorsUpdate(DeviceSensorsData sensorsData) {
-
+        if(sensorsData != null && sensorsData.getLocatorData() != null && sensorsData.getLocatorData().getPosition() != null){
+            positionX = sensorsData.getLocatorData().getPositionX();
+            positionY = sensorsData.getLocatorData().getPositionY();
+        }
     }
 
     @Override

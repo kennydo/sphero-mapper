@@ -123,9 +123,10 @@ public class SpheroCommander implements Commander{
     private void processCollision(float x, float y) {
         Log.d("Collision", "Collision has been found!");
         MappingEvent collisionEvent = new MappingEvent(MappingEvent.Type.COLLISION, x, y, collisionAngle);
+        Log.d("SpheroCommander", "Reporting event " + collisionEvent.getType().name() + " at ("+ x + ", " + y + ") with angle=" + collisionAngle);
+        finish();
         Runner.getMapper().reportEvent(collisionEvent);
         collisionDetected = false;
-        finish();
     }
 
     private void processSquareSuccess(float x, float y) {
@@ -146,8 +147,9 @@ public class SpheroCommander implements Commander{
 
     private synchronized void processEvent(float x, float y, MappingEvent.Type event) {
         MappingEvent collisionEvent = new MappingEvent(event, x, y);
-        Runner.getMapper().reportEvent(collisionEvent);
+        Log.d("SpheroCommander", "Reporting event " + event.name() + " at ("+ x + ", " + y + ")");
         finish();
+        Runner.getMapper().reportEvent(collisionEvent);
     }
 
     private void finish() {
