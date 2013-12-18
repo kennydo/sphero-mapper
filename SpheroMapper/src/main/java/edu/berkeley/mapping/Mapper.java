@@ -11,6 +11,7 @@ import com.vividsolutions.jts.geom.MultiPoint;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.TopologyException;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import com.vividsolutions.jts.operation.buffer.BufferOp;
 import com.vividsolutions.jts.operation.buffer.BufferParameters;
@@ -440,31 +441,58 @@ public class Mapper {
 		return new MultiLineString(lineStrings, geometryFactory);
 	}
 	
-	private Geometry filterGeometry(Geometry g) {
+	private Geometry filterGeometry(Geometry g, MappingEvent event) {
 		double totalArea = perimeterGeometry.getArea() - objectsGeometry.getArea();
 		double threshold = totalArea / 100;
+		Coordinate coordinate = new Coordinate(event.getX(), event.getY());
+		Point point = geometryFactory.createPoint(coordinate);
 		Geometry r = geometryFactory.createMultiPolygon(null);
+		//double largerArea = 0;
+		double shortestDistance = Double.MAX_VALUE;
+		Geometry betterGeometry = null;
 		for (int i = 0; i < g.getNumGeometries(); i++) {
 			Geometry temp = g.getGeometryN(i);
 			if (temp.getGeometryType().equals("Polygon")) {
-				if (temp.getArea() > threshold)
-					r = r.union(temp);
+				if (temp.getArea() > threshold) {
+					//if (temp.getArea() > largerArea) {
+					if (temp.distance(point) < shortestDistance) {
+						//largerArea = temp.getArea();
+						shortestDistance = temp.distance(point);
+						betterGeometry = temp;
+					}
+					//r = r.union(temp);
+				}
 			}
 		}
+		r = betterGeometry;
 		return r;
 	}
 	
-	private Coordinate calculateDestination() {
-		Geometry undiscoveredArea = perimeterGeometry.difference(freeGeometry);
-		undiscoveredArea = undiscoveredArea.difference(objectsGeometry);
-		randomPointsBuilder.setNumPoints(1);
-		Geometry ext = filterGeometry(undiscoveredArea);
-		if (ext == null) return null;
-		randomPointsBuilder.setExtent(ext);
-		MultiPoint points = (MultiPoint) randomPointsBuilder.getGeometry();
-		Point point = (Point) points.getGeometryN(0);
-		Coordinate coordinate = point.getCoordinate();
-		return coordinate;
+	private Coordinate calculateDestination(MappingEvent event) {
+		try {
+			Geometry undiscoveredArea = perimeterGeometry.difference(freeGeometry);
+			undiscoveredArea = undiscoveredArea.difference(objectsGeometry);
+			Coordinate coordinate = new Coordinate(event.getX(), event.getY());
+			Point point = geometryFactory.createPoint(coordinate);
+			randomPointsBuilder.setNumPoints(10);
+			Geometry ext = filterGeometry(undiscoveredArea, event);
+			if (ext == null) return null;
+			randomPointsBuilder.setExtent(ext);
+			MultiPoint points = (MultiPoint) randomPointsBuilder.getGeometry();
+			Point betterPoint = (Point) points.getGeometryN(0);
+			double shortestDistance = Double.MAX_VALUE;
+			for (int i = 0; i < points.getNumGeometries(); i++) {
+				Point point2 = (Point) points.getGeometryN(i);
+				if (point.distance(point2) < shortestDistance) {
+					betterPoint = point2;
+				}
+			}
+			Coordinate coordinate2 = betterPoint.getCoordinate();
+			return coordinate2;
+		} catch (TopologyException e) {
+			System.err.println("Topology exception.");
+			return new Coordinate(0,0);
+		}
 	}
 	
 	private ArrayList<Coordinate> generateRandomPoints(int n) {
@@ -594,7 +622,7 @@ public class Mapper {
 	
 	private ArrayList<Coordinate> calculatePathPoints(MappingEvent event) {
 		Coordinate origin = new Coordinate(event.getX(), event.getY());
-		Coordinate destination = calculateDestination();
+		Coordinate destination = calculateDestination(event);
 		if (destination == null) return null;
 		Coordinate[] coordinates = {origin, destination};
 		CoordinateSequence coords = new CoordinateArraySequence(coordinates);
@@ -674,6 +702,10 @@ public class Mapper {
 	
 	public Geometry getEdgesGeometry() {
 		return edgesGeometry;
+	}
+	
+	public void eraseEdgesGeometry() {
+		edgesGeometry = geometryFactory.createGeometry(null);
 	}
 	
 	public void addStateChangeListener(StateChangeListener listener){

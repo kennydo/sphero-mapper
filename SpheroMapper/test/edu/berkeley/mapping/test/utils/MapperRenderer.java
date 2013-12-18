@@ -137,6 +137,7 @@ public class MapperRenderer extends JFrame{
 					Shape objectsShape = shapeFactory.fromGeometry(line);
 					g2d.setColor(Color.CYAN);
 					g2d.draw(objectsShape);
+					mapper.eraseEdgesGeometry();
 				}
 			}
 			
