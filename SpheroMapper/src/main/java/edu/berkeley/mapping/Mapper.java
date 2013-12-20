@@ -221,10 +221,10 @@ public class Mapper {
 							setState(State.CONTOUR_OBSTACLE, event);
 						} else {
 							System.out.println("Point VISITED.");
-							if (perimeterGeometry.isEmpty()) {
+							if (perimeterGeometry.isEmpty()) { //I think the perimeterGeometry,isEmpty() always return at this point... ???
 								headingVariation = calculateDriveHeadingVariation(event);
 								setState(State.SEARCH_OBSTACLE, event);
-							} else {
+							} else { //I think this is unreachable
 								pathPoints = calculatePathPoints(event);
 								if (pathPoints == null) {
 									setState(State.FINISHED, event);
@@ -280,9 +280,13 @@ public class Mapper {
 								headingVariation = calculateDriveHeadingVariation(event);
 								setState(State.SEARCH_OBSTACLE, event);
 							} else {
-								System.out.println("Perimeter is not empty.");
+								System.out.println("Perimeter is not empty.");								
 								pathPoints = calculatePathPoints(event);
-								setState(State.FOLLOW_PATH, event);
+								if (pathPoints == null) {
+									setState(State.FINISHED, event);
+								} else {
+									setState(State.FOLLOW_PATH, event);
+								}
 							}
 						}else{
 							setState(State.CONTOUR_OBSTACLE, event);
@@ -306,12 +310,16 @@ public class Mapper {
 							setState(State.CONTOUR_OBSTACLE, event);
 						} else {
 							System.out.println("In FOLLOW_PATH, COLLISION, point visited.");
-							if (perimeterGeometry.isEmpty()) {
-								headingVariation = calculateDriveHeadingVariation(event);
+							if (perimeterGeometry.isEmpty()) {//I think perimeterGeometry.isEmpty() alwas returns false at this point.
+								headingVariation = calculateDriveHeadingVariation(event);//I think this is unreachable.
 								setState(State.SEARCH_OBSTACLE, event);
 							} else {
 								pathPoints = calculatePathPoints(event);
-								setState(State.FOLLOW_PATH, event);
+								if (pathPoints == null) {
+									setState(State.FINISHED, event);
+								} else {
+									setState(State.FOLLOW_PATH, event);
+								}
 							}
 						}
 						break;
@@ -324,7 +332,8 @@ public class Mapper {
 						System.out.println("In FOLLOW_PATH, POINTS_COMPLETED.");
 						g = generateDistanceReachedGeometry(event);
 						freeGeometry = freeGeometry.union(g);
-						if (perimeterGeometry.isEmpty()) {
+						if (perimeterGeometry.isEmpty()) {//I think perimeterGeometry.isEmpty() alwas returns false at this point.
+							//I think this is unreachable.
 							headingVariation = calculateDriveHeadingVariation(event);
 							setState(State.SEARCH_OBSTACLE, event);
 						} else {
@@ -356,6 +365,7 @@ public class Mapper {
 			case SEARCH_OBSTACLE:
 				commander.drive(headingVariation, parameters.getCommanderDriveDistance());
 				if(!perimeterGeometry.isEmpty()){ //Temporary for tests
+					//I think this block isn't necessary anymore.
 					RandomPointsBuilder builder = new RandomPointsBuilder(geometryFactory);
 					builder.setExtent(perimeterGeometry);
 					builder.setNumPoints(4);
